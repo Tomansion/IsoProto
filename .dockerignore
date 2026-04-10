@@ -1,0 +1,5 @@
+backend/config/config.ini
+backend/venv
+frontend/node_modules/
+.pytest_cache/
+__pycache__/
