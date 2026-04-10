@@ -50,6 +50,7 @@ export default {
       error: null,
       joining: null,
       playerName: "",
+      lobbyWs: null,
     };
   },
   mounted() {
@@ -59,9 +60,13 @@ export default {
       return;
     }
     this.loadGames();
+    this.connectLobby();
     window.addEventListener("keydown", this.handleKeydown);
   },
   beforeUnmount() {
+    if (this.lobbyWs) {
+      this.lobbyWs.close();
+    }
     window.removeEventListener("keydown", this.handleKeydown);
   },
   methods: {
@@ -74,6 +79,48 @@ export default {
         this.error = err.message;
       } finally {
         this.loading = false;
+      }
+    },
+    connectLobby() {
+      try {
+        const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        this.lobbyWs = new WebSocket(`${wsProtocol}//localhost:8000/ws/lobby`);
+
+        this.lobbyWs.onmessage = (event) => {
+          const message = JSON.parse(event.data);
+          this.handleLobbyMessage(message);
+        };
+
+        this.lobbyWs.onerror = (error) => {
+          console.error("Lobby WebSocket error:", error);
+        };
+
+        this.lobbyWs.onclose = () => {
+          console.log("Lobby disconnected");
+        };
+      } catch (err) {
+        console.error("Failed to connect to lobby:", err);
+      }
+    },
+    handleLobbyMessage(message) {
+      switch (message.type) {
+        case "games_update":
+          this.games = message.data;
+          break;
+        case "game_created":
+          this.games.push(message.data);
+          break;
+        case "game_updated":
+          const idx = this.games.findIndex(g => g.id === message.data.id);
+          if (idx >= 0) {
+            this.games[idx] = message.data;
+          }
+          break;
+        case "game_deleted":
+          this.games = this.games.filter(g => g.id !== message.game_id);
+          break;
+        default:
+          console.log("Lobby message:", message.type);
       }
     },
     async joinGame(gameId) {

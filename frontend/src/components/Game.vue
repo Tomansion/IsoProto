@@ -97,11 +97,21 @@ export default {
         case "game_state":
           this.game = message.data;
           break;
+        case "player_joined":
+          if (message.data) {
+            this.game.nb_players = message.data.nb_players;
+            this.game.players = message.data.players;
+          }
+          break;
+        case "player_left":
+          if (message.data) {
+            this.game.nb_players = message.data.nb_players;
+            this.game.players = message.data.players;
+          }
+          break;
         case "action":
-          console.log(message.player, "performed:", message.data);
           break;
         case "player_disconnected":
-          console.log(message.player, "left the game");
           break;
         default:
           console.log("Message:", message.type);

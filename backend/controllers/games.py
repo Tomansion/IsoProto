@@ -1,14 +1,16 @@
 from models.game import Game
 from models.player import Player
-from models.database import GameDatabase
 from services.game_manager import game_manager
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
 from typing import List, Optional
+import asyncio
 
-# Initialize router and database
+# Import the WebSocket manager
+from ws.game_ws import manager as ws_manager
+
+# Initialize router
 router = APIRouter(tags=["games"])
-db = GameDatabase("data")
 
 
 class GameResponse(BaseModel):
@@ -33,7 +35,7 @@ class GameResponse(BaseModel):
 async def get_games():
     """Get all games."""
     try:
-        games = db.get_all_games()
+        games = game_manager.get_all_games()
         return [GameResponse.from_game(g) for g in games]
     except Exception as e:
         import traceback
@@ -46,21 +48,29 @@ async def get_games():
 async def create_game(player_name: str = Query(...)):
     """Create a new game."""
     try:
-        # Create a new game with player as creator
-        new_game = Game(
+        # Create a new game in RAM
+        new_game = game_manager.create_game(
             name=player_name,
             creator_id=player_name,
         )
-        # Add creator as first player
-        creator = Player(username=player_name)
-        new_game.players.append(creator)
-        new_game.nb_players = 1
 
-        # Save it to the database
-        saved_game = db.save_game(new_game)
+        # Broadcast to lobby
+        asyncio.create_task(ws_manager.broadcast_lobby({
+            "type": "game_created",
+            "data": {
+                "id": new_game.id,
+                "name": new_game.name,
+                "creator_id": new_game.creator_id,
+                "created_at": new_game.created_at,
+                "nb_players": new_game.nb_players,
+            }
+        }))
 
-        # Make it active
-        game_manager.create_active_game(saved_game)
+        return GameResponse.from_game(new_game)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
         return GameResponse.from_game(saved_game)
     except ValueError as e:
@@ -73,24 +83,39 @@ async def create_game(player_name: str = Query(...)):
 async def join_game(game_id: str, player_name: str = Query(...)):
     """Join an existing game."""
     try:
-        # Get the game from database
-        game = db.get_game(game_id)
+        # Get the game from RAM
+        game = game_manager.get_game(game_id)
         if not game:
             raise HTTPException(status_code=404, detail="Game not found")
 
         # Create player and add to game
         player = Player(username=player_name)
-        game.players.append(player)
-        game.nb_players = len(game.players)
+        game_manager.add_player_to_game(game_id, player)
 
-        # Update database
-        db.update_game(game)
+        # Broadcast to lobby
+        asyncio.create_task(ws_manager.broadcast_lobby({
+            "type": "game_updated",
+            "data": {
+                "id": game.id,
+                "name": game.name,
+                "creator_id": game.creator_id,
+                "created_at": game.created_at,
+                "nb_players": game.nb_players,
+            }
+        }))
 
-        # Make sure game is in active manager
-        if not game_manager.is_game_active(game_id):
-            game_manager.create_active_game(game)
-        else:
-            game_manager.add_player_to_game(game_id, player)
+        # Broadcast to game that player joined
+        asyncio.create_task(ws_manager.broadcast_game(
+            game_id,
+            {
+                "type": "player_joined",
+                "player": player_name,
+                "data": {
+                    "nb_players": game.nb_players,
+                    "players": [{"id": p.id, "username": p.username} for p in game.players],
+                },
+            }
+        ))
 
         return GameResponse.from_game(game)
     except HTTPException:
