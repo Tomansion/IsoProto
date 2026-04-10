@@ -1,6 +1,7 @@
 import uuid
 from typing import Dict, Optional, List
 from models.player import Player
+from models.map import Map
 from datetime import datetime
 
 
@@ -11,6 +12,7 @@ class Game:
         id: str = None,
         creator_id: str = None,
         created_at: str = None,
+        seed: int = 0,
     ):
         self.id = id or str(uuid.uuid4())
         self.name = name
@@ -18,6 +20,7 @@ class Game:
         self.created_at = created_at or datetime.utcnow().isoformat()
         self.players: List[Player] = []
         self.nb_players = 0
+        self.map = Map(seed=seed)
 
     def to_dict(self) -> Dict:
         """Convert the Game object to a dictionary for storage."""
@@ -28,6 +31,7 @@ class Game:
             "created_at": self.created_at,
             "nb_players": self.nb_players,
             "players": [p.to_dict() for p in self.players],
+            "map": self.map.to_dict(),
         }
 
     @classmethod
@@ -43,4 +47,6 @@ class Game:
         game.players = [
             Player.from_dict(p) for p in data.get("players", [])
         ]
+        if "map" in data:
+            game.map = Map.from_dict(data["map"])
         return game

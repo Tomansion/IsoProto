@@ -123,6 +123,7 @@ async def websocket_endpoint(
                             {"id": p.id, "username": p.username}
                             for p in game.players
                         ],
+                        "map": game.map.to_dict(),
                     },
                 }
             )

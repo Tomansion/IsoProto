@@ -14,16 +14,20 @@
         <div class="game-content">
           <div class="game-board">
             <div v-if="loading" class="status">connecting...</div>
-            <div v-else-if="error" class="status error-msg">error: {{ error }}</div>
-            <div v-else class="canvas-placeholder" id="game-canvas">
-              [game-board]
+            <div v-else-if="error" class="status error-msg">
+              error: {{ error }}
             </div>
+            <div v-else id="game-canvas-container" class="phaser-container"></div>
           </div>
 
           <div class="players-panel">
             <div class="panel-header">PLAYERS</div>
             <div class="players-list">
-              <div v-for="player in game?.players" :key="player.id" class="player-item">
+              <div
+                v-for="player in game?.players"
+                :key="player.id"
+                class="player-item"
+              >
                 > {{ player.username }}
               </div>
             </div>
@@ -36,6 +40,7 @@
 
 <script>
 import api from "../services/api";
+import phaserGameManager from "../services/PhaserGameManager.js";
 
 export default {
   name: "Game",
@@ -47,6 +52,7 @@ export default {
       error: null,
       playerName: "",
       websocket: null,
+      map: null,
     };
   },
   mounted() {
@@ -55,6 +61,10 @@ export default {
       this.$router.push("/");
       return;
     }
+
+    // Initialize Phaser game for map rendering
+    phaserGameManager.init("game-canvas-container");
+
     this.connectToGame();
     window.addEventListener("keydown", this.handleKeydown);
   },
@@ -63,6 +73,11 @@ export default {
       this.websocket.close();
     }
     window.removeEventListener("keydown", this.handleKeydown);
+
+    // Clean up Phaser game
+    if (phaserGameManager.isInitialized()) {
+      phaserGameManager.destroy();
+    }
   },
   methods: {
     connectToGame() {
@@ -96,6 +111,11 @@ export default {
       switch (message.type) {
         case "game_state":
           this.game = message.data;
+          if (message.data.map) {
+            this.map = message.data.map;
+            // Render map in Phaser
+            phaserGameManager.renderMap(this.map);
+          }
           break;
         case "player_joined":
           if (message.data) {
@@ -214,10 +234,7 @@ export default {
   flex: 1;
   background-color: #000000;
   border-right: 1px solid #00aa00;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 12px;
+  display: block;
   overflow: hidden;
   position: relative;
 }
@@ -239,10 +256,22 @@ export default {
   font-size: 12px;
 }
 
+.phaser-container {
+  width: 100%;
+  height: 100%;
+}
+
 .status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   color: #00ff00;
   font-size: 12px;
   text-align: center;
+  background-color: rgba(0, 0, 0, 0.8);
+  padding: 10px 20px;
+  border: 1px solid #00aa00;
 }
 
 .error-msg {
