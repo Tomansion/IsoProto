@@ -38,6 +38,10 @@ export default {
     if (!this.playerName || this.playerName === "Player") {
       this.$router.push("/");
     }
+    window.addEventListener("keydown", this.handleKeydown);
+  },
+  beforeUnmount() {
+    window.removeEventListener("keydown", this.handleKeydown);
   },
   methods: {
     async createNewGame() {
@@ -58,6 +62,16 @@ export default {
     handleLogout() {
       localStorage.removeItem("playerName");
       this.$router.push("/");
+    },
+    handleKeydown(e) {
+      const key = e.key.toLowerCase();
+      if (key === "l") {
+        this.goToListGames();
+      } else if (key === "c" && !this.creating) {
+        this.createNewGame();
+      } else if (key === "q") {
+        this.handleLogout();
+      }
     },
   },
 };

@@ -56,11 +56,13 @@ export default {
       return;
     }
     this.connectToGame();
+    window.addEventListener("keydown", this.handleKeydown);
   },
   beforeUnmount() {
     if (this.websocket) {
       this.websocket.close();
     }
+    window.removeEventListener("keydown", this.handleKeydown);
   },
   methods: {
     connectToGame() {
@@ -110,6 +112,12 @@ export default {
         this.websocket.close();
       }
       this.$router.push("/home");
+    },
+    handleKeydown(e) {
+      const key = e.key.toLowerCase();
+      if (key === "q") {
+        this.leaveGame();
+      }
     },
   },
 };

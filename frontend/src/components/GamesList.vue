@@ -16,7 +16,8 @@
         </div>
 
         <div v-else class="games-list">
-          <div v-for="game in games" :key="game.id" class="game-row">
+          <div v-for="(game, index) in games" :key="game.id" class="game-row">
+            <div class="game-number">[{{ index + 1 }}]</div>
             <div class="game-info">
               <span class="game-name">{{ game.name }}</span>
               <span class="game-stats">{{ game.nb_players }} players</span>
@@ -58,6 +59,10 @@ export default {
       return;
     }
     this.loadGames();
+    window.addEventListener("keydown", this.handleKeydown);
+  },
+  beforeUnmount() {
+    window.removeEventListener("keydown", this.handleKeydown);
   },
   methods: {
     async loadGames() {
@@ -85,6 +90,18 @@ export default {
     },
     goHome() {
       this.$router.push("/home");
+    },
+    handleKeydown(e) {
+      const key = e.key.toLowerCase();
+      
+      if (key === "b") {
+        this.goHome();
+      } else if (/^[1-9]$/.test(key)) {
+        const index = parseInt(key) - 1;
+        if (index < this.games.length && this.joining === null) {
+          this.joinGame(this.games[index].id);
+        }
+      }
     },
   },
 };
@@ -159,10 +176,17 @@ export default {
   border-bottom: none;
 }
 
+.game-number {
+  color: #00aa00;
+  min-width: 30px;
+  font-weight: bold;
+}
+
 .game-info {
   display: flex;
   flex-direction: column;
   flex: 1;
+  padding: 0 12px;
 }
 
 .game-name {
