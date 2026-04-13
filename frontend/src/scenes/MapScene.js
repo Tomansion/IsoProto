@@ -92,7 +92,7 @@ export class MapScene extends Phaser.Scene {
     this.tileManager.renderTiles(mapData);
 
     // Render buildings
-    this.buildingManager.renderBuildings(mapData.buildings);
+    this.buildingManager.renderBuildings(mapData);
 
     // Set up camera to view the map
     this.cameraManager.setupIsometricCamera(mapData);

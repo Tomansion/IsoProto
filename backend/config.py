@@ -14,12 +14,12 @@ PERLIN_LACUNARITY = 2.0
 PERLIN_TREE_THRESHOLD = 0.55  # Noise value above this = tree
 
 # Elevation parameters (separate Perlin noise for terrain height)
-ELEVATION_SCALE = 20.0  # Lower values = larger elevation features
+ELEVATION_SCALE = 100.0  # Lower values = larger elevation features
 ELEVATION_OCTAVES = 4
 ELEVATION_PERSISTENCE = 10.6
 ELEVATION_LACUNARITY = 1.0
 ELEVATION_MIN = 0  # Minimum elevation
-ELEVATION_MAX = 20  # Maximum elevation
+ELEVATION_MAX = 50  # Maximum elevation
 
 # Tile types
 TILE_EMPTY = 0

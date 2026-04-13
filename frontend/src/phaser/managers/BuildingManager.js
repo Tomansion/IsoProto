@@ -32,10 +32,11 @@ export class BuildingManager {
   }
 
   /**
-   * Render all buildings from building data
-   * @param {object[]} buildingsData - Array of building data {id, x, y, building_id, elevation}
+   * Render all buildings from map data
+   * @param {object} mapData - Map data from backend {buildings: [{id, x, y, building_id, elevation}, ...]}
    */
-  renderBuildings(buildingsData) {
+  renderBuildings(mapData) {
+    const buildingsData = mapData.buildings;
     this.clearBuildings();
 
     if (!buildingsData || buildingsData.length === 0) {
@@ -45,21 +46,23 @@ export class BuildingManager {
 
     // Render each building
     for (const building of buildingsData) {
-      this.renderBuilding(building);
+      this.renderBuilding(building, mapData);
     }
   }
 
   /**
    * Render a single building
    * @param {object} building - Building data {id, x, y, building_id, elevation}
+   * @param {object} mapData - Map data from backend {width, height, tiles, elevation, buildings}
    */
-  renderBuilding(building) {
-    const { x, y, building_id, id, elevation } = building;
+  renderBuilding(building, mapData) {
+    const { x, y, building_id, id } = building;
+    const elevation = mapData.elevation[y][x];
 
     // Convert to isometric coordinates
     // Buildings are 96x96 px (3x3 tiles), offset them to sit on the ground properly
-    const iso = cartesianToIsometric(x - 1, y -1, elevation);
-    const depth = getDepthForTile(x, y+4); // Higher depth than trees
+    const iso = cartesianToIsometric(x - 0.9, y -0.9, elevation);
+    const depth = getDepthForTile(x+4, y+4); // Higher depth than trees
 
     // Create sprite
     const sprite = this.scene.add.sprite(

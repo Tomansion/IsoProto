@@ -1,7 +1,6 @@
 """Map model for game maps."""
 
-import numpy as np
-from noise import pnoise2
+from perlin_noise import PerlinNoise
 import uuid
 from config import (
     MAP_SIZE, MAP_CENTER, BASE_RADIUS, PERLIN_SCALE, PERLIN_FREQUENCY,
@@ -52,6 +51,18 @@ class Map:
         self.tiles: List[List[int]] = []
         self.elevation: List[List[float]] = []
         self.buildings: List[Building] = []
+        
+        # Initialize Perlin noise generators
+        # Note: perlin-noise library handles persistence and lacunarity internally
+        self.tree_noise = PerlinNoise(
+            octaves=PERLIN_OCTAVES,
+            seed=seed
+        )
+        self.elevation_noise = PerlinNoise(
+            octaves=ELEVATION_OCTAVES,
+            seed=seed + 100
+        )
+        
         self._generate_map()
         self._place_buildings()
 
@@ -65,34 +76,18 @@ class Map:
             elevation_row = []
             for x in range(self.width):
                 # Generate Perlin noise value for trees
-                noise_value = pnoise2(
-                    x / PERLIN_SCALE + self.seed,
-                    y / PERLIN_SCALE + self.seed,
-                    octaves=PERLIN_OCTAVES,
-                    persistence=PERLIN_PERSISTENCE,
-                    lacunarity=PERLIN_LACUNARITY,
-                    repeatx=MAP_SIZE,
-                    repeaty=MAP_SIZE,
-                    base=0
-                )
+                noise_value = self.tree_noise([x / PERLIN_SCALE, y / PERLIN_SCALE])
                 
                 # Normalize noise value to 0-1 range
                 normalized_value = (noise_value + 1) / 2
                 
                 # Generate elevation using separate Perlin noise
-                elevation_noise = pnoise2(
-                    x / ELEVATION_SCALE + self.seed + 100,  # +100 to offset from tree noise
-                    y / ELEVATION_SCALE + self.seed + 100,
-                    octaves=ELEVATION_OCTAVES,
-                    persistence=ELEVATION_PERSISTENCE,
-                    lacunarity=ELEVATION_LACUNARITY,
-                    repeatx=MAP_SIZE,
-                    repeaty=MAP_SIZE,
-                    base=0
+                elevation_value_raw = self.elevation_noise(
+                    [x / ELEVATION_SCALE, y / ELEVATION_SCALE]
                 )
                 
                 # Normalize elevation to desired range
-                normalized_elevation = (elevation_noise + 1) / 2
+                normalized_elevation = (elevation_value_raw + 1) / 2
                 elevation_value = ELEVATION_MIN + normalized_elevation * (ELEVATION_MAX - ELEVATION_MIN)
                 
                 # Check if this is in the center clear zone (base area)
