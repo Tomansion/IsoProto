@@ -9,15 +9,16 @@ import { TILE_SIZE } from "../config/mapConfig.js";
  * Convert cartesian (map) coordinates to isometric screen coordinates
  * @param {number} x - Cartesian X coordinate (column in map grid)
  * @param {number} y - Cartesian Y coordinate (row in map grid)
+ * @param {number} elevation - Elevation value (default 0)
  * @returns {object} {screenX, screenY} - Screen coordinates in pixels
  */
-export function cartesianToIsometric(x, y) {
+export function cartesianToIsometric(x, y, elevation = 0) {
   const tileWidth = TILE_SIZE;
   const tileHeight = TILE_SIZE;
 
   // Standard isometric projection formulas
   const screenX = (x - y) * (tileWidth / 2);
-  const screenY = (x + y) * (tileHeight / 4);
+  const screenY = (x + y) * (tileHeight / 4) - elevation * 2; // Elevation lifts tiles up
 
   return {
     screenX,

@@ -16,12 +16,12 @@ export class TileManager {
 
   /**
    * Render all tiles from map data
-   * @param {object} mapData - Map data from backend {width, height, tiles: [[...]]}
+   * @param {object} mapData - Map data from backend {width, height, tiles: [[...]], elevation: [[...]]}
    */
   renderTiles(mapData) {
     this.clearTiles();
 
-    const { tiles, width, height } = mapData;
+    const { tiles, elevation, width, height } = mapData;
 
     let groundCount = 0;
     let treeCount = 0;
@@ -30,14 +30,15 @@ export class TileManager {
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const tileType = tiles[y][x];
+        const tileElevation = elevation && elevation[y] ? elevation[y][x] : 0;
 
         // Always render ground tile
-        this.renderGroundTile(x, y);
+        this.renderGroundTile(x, y, tileElevation);
         groundCount++;
 
         // Render tree if present
         if (tileType === TILE_TREE) {
-          this.renderTreeTile(x, y);
+          this.renderTreeTile(x, y, tileElevation);
           treeCount++;
         }
       }
@@ -48,9 +49,10 @@ export class TileManager {
    * Render a ground tile at the given coordinates
    * @param {number} x - Cartesian X coordinate
    * @param {number} y - Cartesian Y coordinate
+   * @param {number} elevation - Elevation value
    */
-  renderGroundTile(x, y) {
-    const iso = cartesianToIsometric(x, y);
+  renderGroundTile(x, y, elevation = 0) {
+    const iso = cartesianToIsometric(x, y, elevation);
     const depth = getDepthForTile(x, y);
 
     const sprite = this.scene.add.sprite(iso.screenX, iso.screenY, getTilesetKey(), TILESET_INDEX.GROUND);
@@ -65,9 +67,11 @@ export class TileManager {
    * Render a tree tile at the given coordinates (above the ground tile)
    * @param {number} x - Cartesian X coordinate
    * @param {number} y - Cartesian Y coordinate
+   * @param {number} elevation - Elevation value
    */
-  renderTreeTile(x, y) {
-    const iso = cartesianToIsometric(x-1, y-1);
+  renderTreeTile(x, y, elevation = 0) {
+    // Trees are offset and should sit on the elevated ground
+    const iso = cartesianToIsometric(x-1, y-1, elevation);
     const depth = getDepthForTile(x, y) + 100000; // higher depth for layering
 
     const sprite = this.scene.add.sprite(iso.screenX, iso.screenY, getTilesetKey(), TILESET_INDEX.TREE);
