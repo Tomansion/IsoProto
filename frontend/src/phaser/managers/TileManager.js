@@ -71,10 +71,12 @@ export class TileManager {
    */
   renderTreeTile(x, y, elevation = 0) {
     // Trees are offset and should sit on the elevated ground
+    const randomOffsetX = (Math.random() - 0.5) * 5; // Random horizontal offset for natural look
+    const randomOffsetY = (Math.random() - 0.5) * 4; // Random vertical offset for natural look
     const iso = cartesianToIsometric(x-1, y-1, elevation);
     const depth = getDepthForTile(x, y) + 100000; // higher depth for layering
 
-    const sprite = this.scene.add.sprite(iso.screenX, iso.screenY, getTilesetKey(), TILESET_INDEX.TREE);
+    const sprite = this.scene.add.sprite(iso.screenX + randomOffsetX, iso.screenY + randomOffsetY, getTilesetKey(), TILESET_INDEX.TREE);
     sprite.setDepth(depth);
     sprite.setOrigin(0.5, 0.5);
     sprite.setScale(TILE_SIZE / 32);
