@@ -58,8 +58,8 @@ export class BuildingManager {
 
     // Convert to isometric coordinates
     // Buildings are 96x96 px (3x3 tiles), offset them to sit on the ground properly
-    const iso = cartesianToIsometric(x - 1, y - 1, elevation);
-    const depth = getDepthForTile(x, y) + 50000; // Higher depth than trees
+    const iso = cartesianToIsometric(x - 1, y -1, elevation);
+    const depth = getDepthForTile(x, y+4); // Higher depth than trees
 
     // Create sprite
     const sprite = this.scene.add.sprite(
