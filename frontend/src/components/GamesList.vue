@@ -84,7 +84,7 @@ export default {
     connectLobby() {
       try {
         const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        this.lobbyWs = new WebSocket(`${wsProtocol}//localhost:8000/ws/lobby`);
+        this.lobbyWs = new WebSocket(`${wsProtocol}//${window.location.host}/ws/lobby`);
 
         this.lobbyWs.onmessage = (event) => {
           const message = JSON.parse(event.data);

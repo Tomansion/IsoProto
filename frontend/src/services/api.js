@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8000/api";
+const API_BASE_URL = "/api";
 
 class ApiService {
   async _handleResponse(response) {
@@ -52,7 +52,7 @@ class ApiService {
   // WebSocket connection
   connectToGame(gameId, playerName) {
     const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${wsProtocol}//localhost:8000/ws/game/${gameId}?player_name=${playerName}`;
+    const wsUrl = `${wsProtocol}//${window.location.host}/ws/game/${gameId}?player_name=${playerName}`;
     return new WebSocket(wsUrl);
   }
 }
