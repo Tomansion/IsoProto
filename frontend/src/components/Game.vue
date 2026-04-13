@@ -62,9 +62,6 @@ export default {
       return;
     }
 
-    // Initialize Phaser game for map rendering
-    phaserGameManager.init("game-canvas-container");
-
     this.connectToGame();
     window.addEventListener("keydown", this.handleKeydown);
   },
@@ -85,8 +82,13 @@ export default {
         this.websocket = api.connectToGame(this.gameId, this.playerName);
 
         this.websocket.onopen = () => {
-          console.log("Connected to game");
           this.loading = false;
+          
+          // Initialize Phaser game AFTER the container div is rendered
+          // Use nextTick to ensure DOM is updated
+          this.$nextTick(() => {
+            phaserGameManager.init("game-canvas-container");
+          });
         };
 
         this.websocket.onmessage = (event) => {
@@ -109,13 +111,15 @@ export default {
     },
     handleMessage(message) {
       switch (message.type) {
-        case "game_state":
-          this.game = message.data;
-          if (message.data.map) {
-            this.map = message.data.map;
+        case "welcome":
+          if (message.map) {
+            this.map = message.map;
             // Render map in Phaser
             phaserGameManager.renderMap(this.map);
           }
+          break;
+        case "game_state":
+          this.game = message.data;
           break;
         case "player_joined":
           if (message.data) {

@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from services.game_manager import game_manager
 
@@ -109,9 +110,19 @@ async def websocket_endpoint(
     try:
         await manager.connect_game(game_id, websocket)
 
-        # Send initial game state
+        # Send welcome message with map details
         game = game_manager.get_active_game(game_id)
         if game:
+            await websocket.send_json(
+                {
+                    "type": "welcome",
+                    "message": f"Welcome {player_name}!",
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "map": game.map.to_dict(),
+                }
+            )
+
+            # Send initial game state without map
             await websocket.send_json(
                 {
                     "type": "game_state",
@@ -123,12 +134,11 @@ async def websocket_endpoint(
                             {"id": p.id, "username": p.username}
                             for p in game.players
                         ],
-                        "map": game.map.to_dict(),
                     },
                 }
             )
 
-        # Listen for messages
+        # Listen for messages (will handle tick updates and player actions later)
         while True:
             data = await websocket.receive_text()
             message = json.loads(data)

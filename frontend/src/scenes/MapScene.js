@@ -48,7 +48,6 @@ export class MapScene extends Phaser.Scene {
 
     // Ensure tileset is loaded
     if (!this.textures.exists("isometric-tileset")) {
-      console.warn("Tileset not loaded yet, retrying...");
       setTimeout(() => this.renderMap(mapData), 100);
       return;
     }
@@ -61,8 +60,6 @@ export class MapScene extends Phaser.Scene {
 
     // Set up camera to view the map
     this.cameraManager.setupIsometricCamera(mapData);
-
-    console.log(`Map rendered: ${mapData.width}x${mapData.height}`);
   }
 
   /**

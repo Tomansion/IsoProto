@@ -23,6 +23,9 @@ export class TileManager {
 
     const { tiles, width, height } = mapData;
 
+    let groundCount = 0;
+    let treeCount = 0;
+
     // Iterate through each tile in the map
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
@@ -30,10 +33,12 @@ export class TileManager {
 
         // Always render ground tile
         this.renderGroundTile(x, y);
+        groundCount++;
 
         // Render tree if present
         if (tileType === TILE_TREE) {
           this.renderTreeTile(x, y);
+          treeCount++;
         }
       }
     }

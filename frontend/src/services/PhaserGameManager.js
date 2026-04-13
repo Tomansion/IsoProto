@@ -11,6 +11,7 @@ export class PhaserGameManager {
   constructor() {
     this.game = null;
     this.mapScene = null;
+    this.resizeHandler = null;
   }
 
   /**
@@ -37,10 +38,23 @@ export class PhaserGameManager {
     // Use a small timeout to ensure scene initialization
     setTimeout(() => {
       this.mapScene = this.game.scene.getScene("MapScene");
-      if (this.mapScene) {
-        console.log("MapScene initialized");
-      }
     }, 100);
+
+    // Add window resize listener
+    this.resizeHandler = () => this.handleWindowResize();
+    window.addEventListener("resize", this.resizeHandler);
+  }
+
+  /**
+   * Handle window resize events
+   */
+  handleWindowResize() {
+    if (this.game) {
+      const container = document.getElementById(this.game.config.parent);
+      if (container) {
+        this.game.scale.resize(container.clientWidth, container.clientHeight);
+      }
+    }
   }
 
   /**
@@ -50,7 +64,6 @@ export class PhaserGameManager {
   renderMap(mapData) {
     if (!this.mapScene) {
       // Retry after a short delay if scene not ready yet
-      console.warn("MapScene not ready yet, retrying...");
       setTimeout(() => {
         this.renderMap(mapData);
       }, 100);
@@ -65,6 +78,12 @@ export class PhaserGameManager {
    * Clean up all resources
    */
   destroy() {
+    // Remove resize listener
+    if (this.resizeHandler) {
+      window.removeEventListener("resize", this.resizeHandler);
+      this.resizeHandler = null;
+    }
+
     if (this.game) {
       this.game.destroy(true);
       this.game = null;

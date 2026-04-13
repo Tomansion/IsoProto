@@ -2,7 +2,12 @@
  * Tileset asset and frame management utilities
  */
 
-import { TILESET_ASSET, TILESET_INDEX, TILE_EMPTY, TILE_TREE } from "../config/mapConfig.js";
+import {
+  TILESET_ASSET,
+  TILESET_INDEX,
+  TILE_EMPTY,
+  TILE_TREE,
+} from "../config/mapConfig.js";
 
 /**
  * Load the tileset image and create sprite frames
@@ -11,14 +16,10 @@ import { TILESET_ASSET, TILESET_INDEX, TILE_EMPTY, TILE_TREE } from "../config/m
 export function loadTileset(scene) {
   if (!scene.textures.exists(TILESET_ASSET.key)) {
     // Load as spritesheet with 32x32 tile frames
-    scene.load.spritesheet(
-      TILESET_ASSET.key,
-      TILESET_ASSET.url,
-      {
-        frameWidth: TILESET_ASSET.tileWidth,
-        frameHeight: TILESET_ASSET.tileHeight,
-      }
-    );
+    scene.load.spritesheet(TILESET_ASSET.key, TILESET_ASSET.url, {
+      frameWidth: TILESET_ASSET.tileWidth,
+      frameHeight: TILESET_ASSET.tileHeight,
+    });
   }
 }
 
