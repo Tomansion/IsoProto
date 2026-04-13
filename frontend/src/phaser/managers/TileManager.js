@@ -67,8 +67,8 @@ export class TileManager {
    * @param {number} y - Cartesian Y coordinate
    */
   renderTreeTile(x, y) {
-    const iso = cartesianToIsometric(x, y);
-    const depth = getDepthForTile(x, y) + 0.5; // Slightly higher depth for layering
+    const iso = cartesianToIsometric(x-1, y-1);
+    const depth = getDepthForTile(x, y) + 100000; // higher depth for layering
 
     const sprite = this.scene.add.sprite(iso.screenX, iso.screenY, getTilesetKey(), TILESET_INDEX.TREE);
     sprite.setDepth(depth);

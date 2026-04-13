@@ -11,7 +11,7 @@ PERLIN_FREQUENCY = 1.0
 PERLIN_OCTAVES = 3
 PERLIN_PERSISTENCE = 0.65
 PERLIN_LACUNARITY = 2.0
-PERLIN_TREE_THRESHOLD = 0.4  # Noise value above this = tree
+PERLIN_TREE_THRESHOLD = 0.55  # Noise value above this = tree
 
 # Tile types
 TILE_EMPTY = 0

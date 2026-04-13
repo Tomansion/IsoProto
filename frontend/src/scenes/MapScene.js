@@ -36,6 +36,15 @@ export class MapScene extends Phaser.Scene {
   }
 
   /**
+   * Update loop - called every frame
+   */
+  update() {
+    if (this.cameraManager) {
+      this.cameraManager.update();
+    }
+  }
+
+  /**
    * Render the map with the given map data
    * This is the main public API for rendering
    * @param {object} mapData - Map data {width, height, tiles: [[...]]}

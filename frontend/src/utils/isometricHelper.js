@@ -17,7 +17,7 @@ export function cartesianToIsometric(x, y) {
 
   // Standard isometric projection formulas
   const screenX = (x - y) * (tileWidth / 2);
-  const screenY = (x + y) * (tileHeight / 2);
+  const screenY = (x + y) * (tileHeight / 4);
 
   return {
     screenX,
@@ -41,7 +41,7 @@ export function isometricToCartesian(screenX, screenY) {
 
   return {
     x: Math.round(x),
-    y: Math.round(y),
+    y: Math.round(y)/20,
   };
 }
 

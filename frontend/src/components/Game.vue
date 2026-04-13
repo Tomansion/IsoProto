@@ -53,6 +53,7 @@ export default {
       playerName: "",
       websocket: null,
       map: null,
+      connectionTimeout: null,
     };
   },
   mounted() {
@@ -66,6 +67,9 @@ export default {
     window.addEventListener("keydown", this.handleKeydown);
   },
   beforeUnmount() {
+    if (this.connectionTimeout) {
+      clearTimeout(this.connectionTimeout);
+    }
     if (this.websocket) {
       this.websocket.close();
     }
@@ -81,7 +85,21 @@ export default {
       try {
         this.websocket = api.connectToGame(this.gameId, this.playerName);
 
+        // Set a timeout for connection - if it doesn't connect in 5s, show error
+        this.connectionTimeout = setTimeout(() => {
+          if (this.loading) {
+            console.warn("Connection timeout");
+            this.error = "connection timeout - server may be offline";
+            this.loading = false;
+          }
+        }, 5000);
+
         this.websocket.onopen = () => {
+          // Clear timeout on successful connection
+          if (this.connectionTimeout) {
+            clearTimeout(this.connectionTimeout);
+            this.connectionTimeout = null;
+          }
           this.loading = false;
           
           // Initialize Phaser game AFTER the container div is rendered
@@ -98,14 +116,20 @@ export default {
 
         this.websocket.onerror = (error) => {
           console.error("WebSocket error:", error);
-          this.error = "connection error";
+          this.error = "failed to connect to game server";
+          this.loading = false;
+          if (this.connectionTimeout) {
+            clearTimeout(this.connectionTimeout);
+            this.connectionTimeout = null;
+          }
         };
 
         this.websocket.onclose = () => {
-          console.log("Disconnected from game");
+          console.log("WebSocket disconnected");
         };
       } catch (err) {
-        this.error = err.message;
+        console.error("Connection error:", err);
+        this.error = `connection error: ${err.message}`;
         this.loading = false;
       }
     },

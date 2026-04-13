@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from services.game_manager import game_manager
+from models.player import Player
 
 router = APIRouter(tags=["game"])
 
@@ -110,32 +111,62 @@ async def websocket_endpoint(
     try:
         await manager.connect_game(game_id, websocket)
 
-        # Send welcome message with map details
+        # Get or create the game
         game = game_manager.get_active_game(game_id)
-        if game:
-            await websocket.send_json(
-                {
-                    "type": "welcome",
-                    "message": f"Welcome {player_name}!",
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "map": game.map.to_dict(),
-                }
-            )
+        if not game:
+            # Create new game with this ID if it doesn't exist
+            game = game_manager.create_game(name=f"{player_name}'s game", creator_id=player_name)
+            # Override the generated ID with the requested one
+            game.id = game_id
+            game_manager.games[game_id] = game
+            game_manager.game_ws_connections[game_id] = [websocket]
+            print(f"Created new game {game_id} for player {player_name}")
+        else:
+            # Game exists, check if player is already in the game, if not add them
+            player_exists = any(p.username == player_name for p in game.players)
+            if not player_exists:
+                player = Player(username=player_name)
+                game_manager.add_player_to_game(game_id, player)
+                print(f"Player {player_name} rejoined game {game_id}")
 
-            # Send initial game state without map
-            await websocket.send_json(
+        # Send welcome message with map details
+        await websocket.send_json(
+            {
+                "type": "welcome",
+                "message": f"Welcome {player_name}!",
+                "timestamp": datetime.utcnow().isoformat(),
+                "map": game.map.to_dict(),
+            }
+        )
+
+        # Send initial game state without map
+        await websocket.send_json(
+            {
+                "type": "game_state",
+                "data": {
+                    "id": game.id,
+                    "name": game.name,
+                    "nb_players": game.nb_players,
+                    "players": [
+                        {"id": p.id, "username": p.username}
+                        for p in game.players
+                    ],
+                },
+            }
+        )
+
+        # Notify other players that a player joined (only if they were re-joining to existing game)
+        if game and any(p.username == player_name for p in game.players) and game_id in game_manager.games:
+            await manager.broadcast_game(
+                game_id,
                 {
-                    "type": "game_state",
+                    "type": "player_joined",
+                    "player": player_name,
                     "data": {
-                        "id": game.id,
-                        "name": game.name,
                         "nb_players": game.nb_players,
-                        "players": [
-                            {"id": p.id, "username": p.username}
-                            for p in game.players
-                        ],
+                        "players": [{"id": p.id, "username": p.username} for p in game.players],
                     },
-                }
+                },
             )
 
         # Listen for messages (will handle tick updates and player actions later)
