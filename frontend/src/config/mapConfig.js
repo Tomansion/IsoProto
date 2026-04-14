@@ -10,6 +10,8 @@ export const TILE_TREE = 1;
 export const TILESET_INDEX = {
   GROUND: 0,
   TREE: 48,
+  DIRT: 36,
+  WATER: 13,
 };
 
 // Building types and indices

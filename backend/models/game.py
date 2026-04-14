@@ -1,4 +1,5 @@
 import uuid
+import random
 from typing import Dict, Optional, List
 from models.player import Player
 from models.map import Map
@@ -12,7 +13,7 @@ class Game:
         id: str = None,
         creator_id: str = None,
         created_at: str = None,
-        seed: int = 0,
+        seed: int = None,
     ):
         self.id = id or str(uuid.uuid4())
         self.name = name
@@ -20,6 +21,8 @@ class Game:
         self.created_at = created_at or datetime.utcnow().isoformat()
         self.players: List[Player] = []
         self.nb_players = 0
+        if seed is None:
+            seed = random.randint(0, 2**31 - 1)
         self.map = Map(seed=seed)
 
     def to_dict(self) -> Dict:

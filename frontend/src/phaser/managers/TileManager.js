@@ -66,11 +66,17 @@ export class TileManager {
     const iso = cartesianToIsometric(x, y, elevation);
     const depth = getDepthForTile(x, y);
 
+    let tile;
+
+    if (elevation == 0) tile = TILESET_INDEX.WATER;
+    else if (elevation > 2) tile = TILESET_INDEX.GROUND;
+    else tile = TILESET_INDEX.DIRT;
+
     const sprite = this.scene.add.sprite(
       iso.screenX,
       iso.screenY,
       getTilesetKey(),
-      TILESET_INDEX.GROUND,
+      tile,
     );
     sprite.setDepth(depth);
     sprite.setOrigin(0.5, 0.5);
