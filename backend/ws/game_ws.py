@@ -77,23 +77,25 @@ async def lobby_websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for lobby updates."""
     try:
         await manager.connect_lobby(websocket)
-        
+
         # Send initial games list
         games = game_manager.get_all_games()
-        await websocket.send_json({
-            "type": "games_update",
-            "data": [
-                {
-                    "id": g.id,
-                    "name": g.name,
-                    "creator_id": g.creator_id,
-                    "created_at": g.created_at,
-                    "nb_players": g.nb_players,
-                }
-                for g in games
-            ]
-        })
-        
+        await websocket.send_json(
+            {
+                "type": "games_update",
+                "data": [
+                    {
+                        "id": g.id,
+                        "name": g.name,
+                        "creator_id": g.creator_id,
+                        "created_at": g.created_at,
+                        "nb_players": g.nb_players,
+                    }
+                    for g in games
+                ],
+            }
+        )
+
         # Keep connection alive
         while True:
             await websocket.receive_text()
@@ -115,7 +117,9 @@ async def websocket_endpoint(
         game = game_manager.get_active_game(game_id)
         if not game:
             # Create new game with this ID if it doesn't exist
-            game = game_manager.create_game(name=f"{player_name}'s game", creator_id=player_name)
+            game = game_manager.create_game(
+                name=f"{player_name}'s game", creator_id=player_name
+            )
             # Override the generated ID with the requested one
             game.id = game_id
             game_manager.games[game_id] = game
@@ -148,15 +152,18 @@ async def websocket_endpoint(
                     "name": game.name,
                     "nb_players": game.nb_players,
                     "players": [
-                        {"id": p.id, "username": p.username}
-                        for p in game.players
+                        {"id": p.id, "username": p.username} for p in game.players
                     ],
                 },
             }
         )
 
         # Notify other players that a player joined (only if they were re-joining to existing game)
-        if game and any(p.username == player_name for p in game.players) and game_id in game_manager.games:
+        if (
+            game
+            and any(p.username == player_name for p in game.players)
+            and game_id in game_manager.games
+        ):
             await manager.broadcast_game(
                 game_id,
                 {
@@ -164,7 +171,9 @@ async def websocket_endpoint(
                     "player": player_name,
                     "data": {
                         "nb_players": game.nb_players,
-                        "players": [{"id": p.id, "username": p.username} for p in game.players],
+                        "players": [
+                            {"id": p.id, "username": p.username} for p in game.players
+                        ],
                     },
                 },
             )
@@ -187,22 +196,24 @@ async def websocket_endpoint(
 
     except WebSocketDisconnect:
         manager.disconnect_game(game_id, websocket)
-        
+
         # Get current game state
         game = game_manager.get_game(game_id)
         if game:
             # Remove player from game
             game.players = [p for p in game.players if p.username != player_name]
             game.nb_players = len(game.players)
-            
+
             if game.nb_players == 0:
                 # Delete game if empty
                 game_manager.delete_game(game_id)
                 # Notify lobby of deletion
-                await manager.broadcast_lobby({
-                    "type": "game_deleted",
-                    "game_id": game_id,
-                })
+                await manager.broadcast_lobby(
+                    {
+                        "type": "game_deleted",
+                        "game_id": game_id,
+                    }
+                )
             else:
                 # Update game in RAM
                 game_manager.update_game(game)
@@ -214,7 +225,10 @@ async def websocket_endpoint(
                         "player": player_name,
                         "data": {
                             "nb_players": game.nb_players,
-                            "players": [{"id": p.id, "username": p.username} for p in game.players],
+                            "players": [
+                                {"id": p.id, "username": p.username}
+                                for p in game.players
+                            ],
                         },
                     },
                 )

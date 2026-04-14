@@ -31,7 +31,12 @@ export class CameraManager {
     const mapWorldHeight = height * tileSize;
 
     // Set camera bounds to allow viewing the entire map
-    this.camera.setBounds(-mapWorldWidth, -mapWorldHeight, mapWorldWidth * 2, mapWorldHeight * 2);
+    this.camera.setBounds(
+      -mapWorldWidth,
+      -mapWorldHeight,
+      mapWorldWidth * 2,
+      mapWorldHeight * 2,
+    );
 
     // Start at a reasonable zoom and pan
     this.zoomToFitMap(width, height);
@@ -109,8 +114,8 @@ export class CameraManager {
       this.camera.setZoom(newZoom);
 
       // Adjust scroll so the same world point stays under cursor
-      this.camera.scrollX = worldX - (offsetX / newZoom);
-      this.camera.scrollY = worldY - (offsetY / newZoom);
+      this.camera.scrollX = worldX - offsetX / newZoom;
+      this.camera.scrollY = worldY - offsetY / newZoom;
     });
   }
 
@@ -143,7 +148,7 @@ export class CameraManager {
   panToMapCenter(mapWidth, mapHeight) {
     const tileSize = 32;
     const centerX = ((mapWidth - mapHeight) / 2) * (tileSize / 2);
-    const centerY = ((mapWidth + mapHeight) / 2) * (tileSize / 2);
+    const centerY = ((mapWidth + mapHeight) / 2) * (tileSize / 4);
 
     this.camera.centerOn(centerX, centerY);
   }

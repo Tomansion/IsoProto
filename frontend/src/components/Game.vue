@@ -17,7 +17,11 @@
             <div v-else-if="error" class="status error-msg">
               error: {{ error }}
             </div>
-            <div v-else id="game-canvas-container" class="phaser-container"></div>
+            <div
+              v-else
+              id="game-canvas-container"
+              class="phaser-container"
+            ></div>
           </div>
 
           <div class="players-panel">
@@ -101,7 +105,7 @@ export default {
             this.connectionTimeout = null;
           }
           this.loading = false;
-          
+
           // Initialize Phaser game AFTER the container div is rendered
           // Use nextTick to ensure DOM is updated
           this.$nextTick(() => {

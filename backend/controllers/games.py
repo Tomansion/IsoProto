@@ -55,16 +55,20 @@ async def create_game(player_name: str = Query(...)):
         )
 
         # Broadcast to lobby
-        asyncio.create_task(ws_manager.broadcast_lobby({
-            "type": "game_created",
-            "data": {
-                "id": new_game.id,
-                "name": new_game.name,
-                "creator_id": new_game.creator_id,
-                "created_at": new_game.created_at,
-                "nb_players": new_game.nb_players,
-            }
-        }))
+        asyncio.create_task(
+            ws_manager.broadcast_lobby(
+                {
+                    "type": "game_created",
+                    "data": {
+                        "id": new_game.id,
+                        "name": new_game.name,
+                        "creator_id": new_game.creator_id,
+                        "created_at": new_game.created_at,
+                        "nb_players": new_game.nb_players,
+                    },
+                }
+            )
+        )
 
         return GameResponse.from_game(new_game)
     except ValueError as e:
@@ -93,29 +97,37 @@ async def join_game(game_id: str, player_name: str = Query(...)):
         game_manager.add_player_to_game(game_id, player)
 
         # Broadcast to lobby
-        asyncio.create_task(ws_manager.broadcast_lobby({
-            "type": "game_updated",
-            "data": {
-                "id": game.id,
-                "name": game.name,
-                "creator_id": game.creator_id,
-                "created_at": game.created_at,
-                "nb_players": game.nb_players,
-            }
-        }))
+        asyncio.create_task(
+            ws_manager.broadcast_lobby(
+                {
+                    "type": "game_updated",
+                    "data": {
+                        "id": game.id,
+                        "name": game.name,
+                        "creator_id": game.creator_id,
+                        "created_at": game.created_at,
+                        "nb_players": game.nb_players,
+                    },
+                }
+            )
+        )
 
         # Broadcast to game that player joined
-        asyncio.create_task(ws_manager.broadcast_game(
-            game_id,
-            {
-                "type": "player_joined",
-                "player": player_name,
-                "data": {
-                    "nb_players": game.nb_players,
-                    "players": [{"id": p.id, "username": p.username} for p in game.players],
+        asyncio.create_task(
+            ws_manager.broadcast_game(
+                game_id,
+                {
+                    "type": "player_joined",
+                    "player": player_name,
+                    "data": {
+                        "nb_players": game.nb_players,
+                        "players": [
+                            {"id": p.id, "username": p.username} for p in game.players
+                        ],
+                    },
                 },
-            }
-        ))
+            )
+        )
 
         return GameResponse.from_game(game)
     except HTTPException:

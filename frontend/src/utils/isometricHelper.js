@@ -42,7 +42,7 @@ export function isometricToCartesian(screenX, screenY) {
 
   return {
     x: Math.round(x),
-    y: Math.round(y)/20,
+    y: Math.round(y) / 20,
   };
 }
 

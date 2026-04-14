@@ -44,9 +44,7 @@ class Game:
             created_at=data.get("created_at"),
         )
         game.nb_players = data.get("nb_players", 0)
-        game.players = [
-            Player.from_dict(p) for p in data.get("players", [])
-        ]
+        game.players = [Player.from_dict(p) for p in data.get("players", [])]
         if "map" in data:
             game.map = Map.from_dict(data["map"])
         return game

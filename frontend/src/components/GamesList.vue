@@ -4,12 +4,10 @@
       <div class="terminal-header">games@isoproto:~$</div>
       <div class="terminal-content">
         <button @click="goHome" class="terminal-btn back-btn">[B] back</button>
-        
+
         <p class="terminal-text">> AVAILABLE GAMES:</p>
 
-        <div v-if="loading" class="terminal-output">
-          loading games...
-        </div>
+        <div v-if="loading" class="terminal-output">loading games...</div>
 
         <div v-else-if="games.length === 0" class="terminal-output">
           no games available
@@ -83,8 +81,11 @@ export default {
     },
     connectLobby() {
       try {
-        const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        this.lobbyWs = new WebSocket(`${wsProtocol}//${window.location.host}/ws/lobby`);
+        const wsProtocol =
+          window.location.protocol === "https:" ? "wss:" : "ws:";
+        this.lobbyWs = new WebSocket(
+          `${wsProtocol}//${window.location.host}/ws/lobby`,
+        );
 
         this.lobbyWs.onmessage = (event) => {
           const message = JSON.parse(event.data);
@@ -111,13 +112,13 @@ export default {
           this.games.push(message.data);
           break;
         case "game_updated":
-          const idx = this.games.findIndex(g => g.id === message.data.id);
+          const idx = this.games.findIndex((g) => g.id === message.data.id);
           if (idx >= 0) {
             this.games[idx] = message.data;
           }
           break;
         case "game_deleted":
-          this.games = this.games.filter(g => g.id !== message.game_id);
+          this.games = this.games.filter((g) => g.id !== message.game_id);
           break;
         default:
           console.log("Lobby message:", message.type);
@@ -140,7 +141,7 @@ export default {
     },
     handleKeydown(e) {
       const key = e.key.toLowerCase();
-      
+
       if (key === "b") {
         this.goHome();
       } else if (/^[1-9]$/.test(key)) {

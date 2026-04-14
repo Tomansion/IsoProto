@@ -3,9 +3,20 @@
  * Handles placement and rendering of individual tiles on the map
  */
 
-import { cartesianToIsometric, getDepthForTile } from "../../utils/isometricHelper.js";
-import { getFrameForTileType, getTilesetKey } from "../../utils/tilesetHelper.js";
-import { TILE_EMPTY, TILE_TREE, TILE_SIZE, TILESET_INDEX } from "../../config/mapConfig.js";
+import {
+  cartesianToIsometric,
+  getDepthForTile,
+} from "../../utils/isometricHelper.js";
+import {
+  getFrameForTileType,
+  getTilesetKey,
+} from "../../utils/tilesetHelper.js";
+import {
+  TILE_EMPTY,
+  TILE_TREE,
+  TILE_SIZE,
+  TILESET_INDEX,
+} from "../../config/mapConfig.js";
 
 export class TileManager {
   constructor(scene, layerManager) {
@@ -55,7 +66,12 @@ export class TileManager {
     const iso = cartesianToIsometric(x, y, elevation);
     const depth = getDepthForTile(x, y);
 
-    const sprite = this.scene.add.sprite(iso.screenX, iso.screenY, getTilesetKey(), TILESET_INDEX.GROUND);
+    const sprite = this.scene.add.sprite(
+      iso.screenX,
+      iso.screenY,
+      getTilesetKey(),
+      TILESET_INDEX.GROUND,
+    );
     sprite.setDepth(depth);
     sprite.setOrigin(0.5, 0.5);
     sprite.setScale(TILE_SIZE / 32);
@@ -73,10 +89,15 @@ export class TileManager {
     // Trees are offset and should sit on the elevated ground
     const randomOffsetX = (Math.random() - 0.5) * 5; // Random horizontal offset for natural look
     const randomOffsetY = (Math.random() - 0.5) * 4; // Random vertical offset for natural look
-    const iso = cartesianToIsometric(x-1, y-1, elevation);
+    const iso = cartesianToIsometric(x - 1, y - 1, elevation);
     const depth = getDepthForTile(x, y) + 100000; // higher depth for layering
 
-    const sprite = this.scene.add.sprite(iso.screenX + randomOffsetX, iso.screenY + randomOffsetY, getTilesetKey(), TILESET_INDEX.TREE);
+    const sprite = this.scene.add.sprite(
+      iso.screenX + randomOffsetX,
+      iso.screenY + randomOffsetY,
+      getTilesetKey(),
+      TILESET_INDEX.TREE,
+    );
     sprite.setDepth(depth);
     sprite.setOrigin(0.5, 0.5);
     sprite.setScale(TILE_SIZE / 32);

@@ -8,7 +8,11 @@
           <button @click="goToListGames" class="terminal-btn">
             [L] list-games
           </button>
-          <button @click="createNewGame" class="terminal-btn" :disabled="creating">
+          <button
+            @click="createNewGame"
+            class="terminal-btn"
+            :disabled="creating"
+          >
             [C] create-game {{ creating ? "..." : "" }}
           </button>
           <button @click="handleLogout" class="terminal-btn logout">

@@ -27,12 +27,15 @@ class ApiService {
   }
 
   async createGame(playerName) {
-    const response = await fetch(`${API_BASE_URL}/games/?player_name=${playerName}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${API_BASE_URL}/games/?player_name=${playerName}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
     return this._handleResponse(response);
   }
 
@@ -44,7 +47,7 @@ class ApiService {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
     return this._handleResponse(response);
   }

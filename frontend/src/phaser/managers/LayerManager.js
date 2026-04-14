@@ -18,12 +18,12 @@ export class LayerManager {
     // Create graphics objects to act as tile layers
     this.layers.ground = this.scene.make.graphics(
       { x: 0, y: 0, depth: LAYERS.GROUND.depth },
-      false
+      false,
     );
 
     this.layers.trees = this.scene.make.graphics(
       { x: 0, y: 0, depth: LAYERS.TREES.depth },
-      false
+      false,
     );
   }
 
