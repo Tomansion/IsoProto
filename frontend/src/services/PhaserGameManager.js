@@ -35,10 +35,11 @@ export class PhaserGameManager {
     this.game = new Phaser.Game(config);
 
     // Wait for the scene to be ready before storing reference
-    // Use a small timeout to ensure scene initialization
+    // Use a timeout to ensure scene initialization
+    // Phaser scenes initialize asynchronously, so we need to wait long enough
     setTimeout(() => {
       this.mapScene = this.game.scene.getScene("MapScene");
-    }, 100);
+    }, 300);
 
     // Add window resize listener
     this.resizeHandler = () => this.handleWindowResize();

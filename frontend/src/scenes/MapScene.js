@@ -9,7 +9,8 @@ import TileManager from "../phaser/managers/TileManager.js";
 import CameraManager from "../phaser/managers/CameraManager.js";
 import BuildingManager from "../phaser/managers/BuildingManager.js";
 import { loadTileset } from "../utils/tilesetHelper.js";
-import { BUILDING_SHEET_ASSET } from "../config/mapConfig.js";
+import { BUILDING_SHEET_ASSET, TURRET_SHEET_ASSET } from "../config/mapConfig.js";
+import { isometricToCartesian } from "../utils/isometricHelper.js";
 
 export class MapScene extends Phaser.Scene {
   constructor() {
@@ -18,6 +19,8 @@ export class MapScene extends Phaser.Scene {
     this.tileManager = null;
     this.cameraManager = null;
     this.buildingManager = null;
+    this.mapData = null;
+    this.tileClickCallback = null;
   }
 
   preload() {
@@ -35,6 +38,18 @@ export class MapScene extends Phaser.Scene {
         },
       );
     }
+
+    // Load turret spritesheet
+    if (!this.textures.exists(TURRET_SHEET_ASSET.key)) {
+      this.load.spritesheet(
+        TURRET_SHEET_ASSET.key,
+        TURRET_SHEET_ASSET.url,
+        {
+          frameWidth: TURRET_SHEET_ASSET.frameWidth,
+          frameHeight: TURRET_SHEET_ASSET.frameHeight,
+        },
+      );
+    }
   }
 
   create() {
@@ -49,6 +64,38 @@ export class MapScene extends Phaser.Scene {
 
     // Set background color
     this.cameras.main.setBackgroundColor("#1a1a1a");
+  }
+
+  /**
+   * Setup tile click detection for turret placement
+   * @param {function} callback - Callback function(x, y) called when a valid tile is clicked
+   */
+  setupTileClickDetection(callback) {
+    this.tileClickCallback = callback;
+
+    this.input.on("pointerdown", (pointer) => {
+      if (!this.mapData || !this.tileClickCallback) {
+        return;
+      }
+
+      // Get world position from screen position
+      const worldX = this.cameras.main.getWorldPoint(pointer.x, pointer.y).x;
+      const worldY = this.cameras.main.getWorldPoint(pointer.x, pointer.y).y;
+
+      // Convert to cartesian tile coordinates
+      const { x, y } = isometricToCartesian(worldX, worldY);
+
+      // Validate coordinates are within map
+      if (
+        x >= 0 &&
+        x < this.mapData.width &&
+        y >= 0 &&
+        y < this.mapData.height
+      ) {
+        // Call the callback with tile coordinates
+        this.tileClickCallback(x, y);
+      }
+    });
   }
 
   /**
@@ -71,6 +118,9 @@ export class MapScene extends Phaser.Scene {
       return;
     }
 
+    // Store map data for tile click detection
+    this.mapData = mapData;
+
     // Ensure tileset is loaded
     if (!this.textures.exists("isometric-tileset")) {
       setTimeout(() => this.renderMap(mapData), 100);
@@ -80,6 +130,13 @@ export class MapScene extends Phaser.Scene {
     // Ensure building sheet is loaded
     if (!this.textures.exists(BUILDING_SHEET_ASSET.key)) {
       console.log("Waiting for building sheet to load...");
+      setTimeout(() => this.renderMap(mapData), 100);
+      return;
+    }
+
+    // Ensure turret sheet is loaded
+    if (!this.textures.exists(TURRET_SHEET_ASSET.key)) {
+      console.log("Waiting for turret sheet to load...");
       setTimeout(() => this.renderMap(mapData), 100);
       return;
     }
@@ -96,6 +153,20 @@ export class MapScene extends Phaser.Scene {
 
     // Set up camera to view the map
     this.cameraManager.setupIsometricCamera(mapData);
+  }
+
+  /**
+   * Render a single turret on the map
+   * Called when a turret is placed
+   * @param {object} turretData - Turret data {id, x, y, building_type, orientation, player_id}
+   */
+  renderTurret(turretData) {
+    if (!this.buildingManager || !this.mapData) {
+      console.warn("Cannot render turret: building manager or map data not ready");
+      return;
+    }
+
+    this.buildingManager.renderTurret(turretData, this.mapData);
   }
 
   /**

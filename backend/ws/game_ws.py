@@ -185,14 +185,58 @@ async def websocket_endpoint(
 
             # Handle different message types
             if message.get("type") == "player_action":
-                await manager.broadcast_game(
-                    game_id,
-                    {
-                        "type": "action",
-                        "player": player_name,
-                        "data": message.get("data"),
-                    },
-                )
+                action_type = message.get("action_type")
+                
+                # Handle turret placement
+                if action_type == "place_turret":
+                    action_data = message.get("data", {})
+                    x = action_data.get("x")
+                    y = action_data.get("y")
+                    
+                    # Get the current game and player
+                    game = game_manager.get_game(game_id)
+                    if game is None:
+                        continue
+                    
+                    # Find player ID for this player_name
+                    player = next(
+                        (p for p in game.players if p.username == player_name), None
+                    )
+                    if player is None:
+                        continue
+                    
+                    # Attempt to place turret
+                    turret = game_manager.add_turret_to_game(game_id, player.id, x, y)
+                    
+                    if turret:
+                        # Broadcast turret placement to all players in game
+                        await manager.broadcast_game(
+                            game_id,
+                            {
+                                "type": "turret_placed",
+                                "player": player_name,
+                                "data": turret.to_dict(),
+                            },
+                        )
+                    else:
+                        # Send error back to requesting player
+                        await websocket.send_json(
+                            {
+                                "type": "action_error",
+                                "message": "Cannot place turret at this location",
+                                "data": {"x": x, "y": y},
+                            }
+                        )
+                else:
+                    # Broadcast generic player action
+                    await manager.broadcast_game(
+                        game_id,
+                        {
+                            "type": "action",
+                            "player": player_name,
+                            "data": message.get("data"),
+                        },
+                    )
 
     except WebSocketDisconnect:
         manager.disconnect_game(game_id, websocket)

@@ -10,12 +10,23 @@ class Building:
     """Represents a building placed on the map."""
 
     def __init__(
-        self, x: int, y: int, building_id: int = 0, elevation: float = 0, id: str = None
+        self,
+        x: int,
+        y: int,
+        building_id: int = 0,
+        elevation: float = 0,
+        id: str = None,
+        building_type: str = "base",
+        player_id: str = None,
+        orientation: int = 0,
     ):
         self.id = id or str(uuid.uuid4())
         self.x = x
         self.y = y
         self.building_id = building_id  # Index into tileset
+        self.building_type = building_type  # "base", "turret", etc
+        self.player_id = player_id  # ID of player who placed it
+        self.orientation = orientation  # 0-7 for direction (mainly for turrets)
 
     def to_dict(self) -> dict:
         """Convert building to dictionary for serialization."""
@@ -24,6 +35,9 @@ class Building:
             "x": self.x,
             "y": self.y,
             "building_id": self.building_id,
+            "building_type": self.building_type,
+            "player_id": self.player_id,
+            "orientation": self.orientation,
         }
 
     @classmethod
@@ -34,6 +48,9 @@ class Building:
             y=data["y"],
             building_id=data.get("building_id", 0),
             id=data.get("id"),
+            building_type=data.get("building_type", "base"),
+            player_id=data.get("player_id"),
+            orientation=data.get("orientation", 0),
         )
 
 
@@ -58,7 +75,9 @@ class Map:
 
     def _place_buildings(self) -> None:
         """Place base building at the center of the map."""
-        base_building = Building(x=MAP_CENTER, y=MAP_CENTER, building_id=0)
+        base_building = Building(
+            x=MAP_CENTER, y=MAP_CENTER, building_id=0, building_type="base"
+        )
         self.buildings.append(base_building)
 
     def to_dict(self) -> dict:

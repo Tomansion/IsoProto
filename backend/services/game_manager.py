@@ -1,6 +1,9 @@
 from typing import Dict, Optional, List, Set
+import random
 from models.game import Game
 from models.player import Player
+from models.map import Building
+from config import TILE_TREE
 
 
 class GameManager:
@@ -88,6 +91,55 @@ class GameManager:
         if game_id not in self.game_ws_connections:
             self.game_ws_connections[game_id] = []
         self.game_ws_connections[game_id].append(ws)
+
+    # Turret management
+    def add_turret_to_game(
+        self, game_id: str, player_id: str, x: int, y: int
+    ) -> Optional[Building]:
+        """Add a turret to a game map at the given coordinates.
+        
+        Validates placement: tile must be empty (no trees/buildings) and not water.
+        Assigns random orientation (0-7).
+        
+        Returns the created turret Building object or None if validation fails.
+        """
+        game = self.games.get(game_id)
+        if not game:
+            return None
+
+        map_obj = game.map
+        
+        # Validate coordinates are within map
+        if x < 0 or y < 0 or x >= map_obj.width or y >= map_obj.height:
+            return None
+
+        # Validate tile is not water (elevation > 0)
+        elevation = map_obj.elevation[y][x]
+        if elevation <= 0:
+            return None
+
+        # Validate tile has no trees
+        tile = map_obj.tiles[y][x]
+        if tile == TILE_TREE:
+            return None
+
+        # Validate no building already at this location
+        if any(b.x == x and b.y == y for b in map_obj.buildings):
+            return None
+
+        # All validation passed - create turret with random orientation
+        orientation = random.randint(0, 7)
+        turret = Building(
+            x=x,
+            y=y,
+            building_id=0,  # Turret base frame
+            building_type="turret",
+            player_id=player_id,
+            orientation=orientation,
+        )
+        
+        map_obj.buildings.append(turret)
+        return turret
 
 
 # Global game manager instance

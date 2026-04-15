@@ -144,6 +144,18 @@ export default {
             this.map = message.map;
             // Render map in Phaser
             phaserGameManager.renderMap(this.map);
+            
+            // Setup tile click detection AFTER map is ready
+            // Wait for scene to be fully initialized
+            setTimeout(() => {
+              const mapScene = phaserGameManager.getMapScene();
+              if (mapScene) {
+                mapScene.setupTileClickDetection((x, y) => {
+                  console.log("Tile clicked:", x, y);
+                  this.handleTileClick(x, y);
+                });
+              } 
+            }, 400);
           }
           break;
         case "game_state":
@@ -160,6 +172,19 @@ export default {
             this.game.nb_players = message.data.nb_players;
             this.game.players = message.data.players;
           }
+          break;
+        case "turret_placed":
+          if (message.data) {
+            // Render the newly placed turret
+            const mapScene = phaserGameManager.getMapScene();
+            if (mapScene) {
+              mapScene.renderTurret(message.data);
+            }
+          }
+          break;
+        case "action_error":
+          console.warn("Action error:", message.message);
+          // Could add visual feedback here for failed turret placement
           break;
         case "action":
           break;
@@ -180,6 +205,28 @@ export default {
       if (key === "q") {
         this.leaveGame();
       }
+    },
+    handleTileClick(x, y) {
+      // Send turret placement request to backend
+      this.placeTurretAtTile(x, y);
+    },
+    placeTurretAtTile(x, y) {
+      if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
+        console.warn("WebSocket not ready");
+        return;
+      }
+
+      // Send turret placement action
+      this.websocket.send(
+        JSON.stringify({
+          type: "player_action",
+          action_type: "place_turret",
+          data: {
+            x: Math.floor(x),
+            y: Math.floor(y),
+          },
+        }),
+      );
     },
   },
 };

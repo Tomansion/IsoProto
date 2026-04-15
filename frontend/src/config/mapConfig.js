@@ -54,6 +54,39 @@ export const BUILDING_SHEET_ASSET = {
   frameHeight: TILE_SIZE * 3,
 };
 
+// Turret spritesheet asset
+export const TURRET_SHEET_ASSET = {
+  key: "turret-sheet",
+  url: "/images/turrets-sheet.png",
+  frameWidth: 96,
+  frameHeight: 96,
+};
+
+// Turret orientation constants
+export const TURRET_ORIENTATIONS = {
+  DOWN: 0,
+  DOWN_LEFT: 1,
+  LEFT: 2,
+  UP_LEFT: 3,
+  UP: 4,
+  UP_RIGHT: 5,
+  RIGHT: 6,
+  DOWN_RIGHT: 7,
+};
+
+// Turret frame mapping: orientation -> head sprite frame (base is always 0)
+export const TURRET_FRAMES = {
+  BASE: 0,
+  0: 1, // DOWN
+  1: 2, // DOWN_LEFT
+  2: 3, // LEFT
+  3: 4, // UP_LEFT
+  4: 5, // UP
+  5: 6, // UP_RIGHT
+  6: 7, // RIGHT
+  7: 8, // DOWN_RIGHT
+};
+
 export default {
   TILE_EMPTY,
   TILE_TREE,
@@ -63,4 +96,7 @@ export default {
   LAYERS,
   TILESET_ASSET,
   BUILDING_SHEET_ASSET,
+  TURRET_SHEET_ASSET,
+  TURRET_ORIENTATIONS,
+  TURRET_FRAMES,
 };
