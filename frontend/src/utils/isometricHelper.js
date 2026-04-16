@@ -33,12 +33,20 @@ export function cartesianToIsometric(x, y, elevation = 0) {
  * @returns {object} {x, y} - Cartesian map coordinates
  */
 export function isometricToCartesian(screenX, screenY) {
-  const tileWidth = TILE_SIZE;
-  const tileHeight = TILE_SIZE;
+  const tileWidth = TILE_SIZE;  // 32
+  const tileHeight = TILE_SIZE; // 32
 
   // Inverse isometric projection
-  const x = (screenX / (tileWidth / 2) + screenY / (tileHeight / 2)) / 2;
-  const y = (screenY / (tileHeight / 2) - screenX / (tileWidth / 2)) / 2;
+  // Forward: screenX = (x - y) * (tileWidth / 2)
+  // Forward: screenY = (x + y) * (tileHeight / 4)
+  // Solving:
+  // screenX / (tileWidth / 2) = x - y
+  // screenY / (tileHeight / 4) = x + y
+  // x = (screenX / (tileWidth / 2) + screenY / (tileHeight / 4)) / 2
+  // y = (screenY / (tileHeight / 4) - screenX / (tileWidth / 2)) / 2
+
+  const x = (screenX / (tileWidth / 2) + screenY / (tileHeight / 4)) / 2 - 1;
+  const y = (screenY / (tileHeight / 4) - screenX / (tileWidth / 2)) / 2 - 1;
 
   return {
     x: Math.round(x),

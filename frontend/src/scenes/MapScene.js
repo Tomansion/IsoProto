@@ -72,15 +72,35 @@ export class MapScene extends Phaser.Scene {
    */
   setupTileClickDetection(callback) {
     this.tileClickCallback = callback;
+    this.pointerStartX = null;
+    this.pointerStartY = null;
 
     this.input.on("pointerdown", (pointer) => {
+      // Store start position to detect dragging
+      this.pointerStartX = pointer.x;
+      this.pointerStartY = pointer.y;
+    });
+
+    this.input.on("pointerup", (pointer) => {
       if (!this.mapData || !this.tileClickCallback) {
         return;
       }
 
+      // Check if this was a drag (pointer moved significantly)
+      const dragThreshold = 5;
+      if (
+        this.pointerStartX !== null &&
+        (Math.abs(pointer.x - this.pointerStartX) > dragThreshold ||
+          Math.abs(pointer.y - this.pointerStartY) > dragThreshold)
+      ) {
+        // This was a drag, not a click
+        return;
+      }
+
       // Get world position from screen position
-      const worldX = this.cameras.main.getWorldPoint(pointer.x, pointer.y).x;
-      const worldY = this.cameras.main.getWorldPoint(pointer.x, pointer.y).y;
+      const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+      const worldX = worldPoint.x;
+      const worldY = worldPoint.y;
 
       // Convert to cartesian tile coordinates
       const { x, y } = isometricToCartesian(worldX, worldY);
