@@ -82,8 +82,8 @@ export class BuildingManager {
 
     // Convert to isometric coordinates
     // Buildings are 96x96 px (3x3 tiles), offset them to sit on the ground properly
-    const iso = cartesianToIsometric(x - 0.9, y - 0.9, elevation);
-    const depth = getDepthForTile(x + 4, y + 4); // Higher depth than trees
+    const iso = cartesianToIsometric(x - 2, y - 2, elevation);
+    const depth = getDepthForTile(x + 10, y + 10); // Higher depth than trees
 
     // Create sprite
     const sprite = this.scene.add.sprite(
@@ -112,8 +112,8 @@ export class BuildingManager {
 
     // Convert to isometric coordinates
     // Turrets are 96x96 px (3x3 tiles), offset them to sit on the ground properly
-    const iso = cartesianToIsometric(x - 0.9, y - 0.9, elevation);
-    const baseDepth = getDepthForTile(x + 4, y + 4);
+    const iso = cartesianToIsometric(x - 2, y-2 , elevation);
+    const baseDepth = getDepthForTile(x + 10, y + 10); 
     const headDepth = baseDepth + 1; // Head always in front of base
 
     // Create turret base sprite (always frame 0)

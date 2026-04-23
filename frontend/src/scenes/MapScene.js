@@ -10,7 +10,6 @@ import CameraManager from "../phaser/managers/CameraManager.js";
 import BuildingManager from "../phaser/managers/BuildingManager.js";
 import { loadTileset } from "../utils/tilesetHelper.js";
 import { BUILDING_SHEET_ASSET, TURRET_SHEET_ASSET } from "../config/mapConfig.js";
-import { isometricToCartesian } from "../utils/isometricHelper.js";
 
 export class MapScene extends Phaser.Scene {
   constructor() {
@@ -20,7 +19,12 @@ export class MapScene extends Phaser.Scene {
     this.cameraManager = null;
     this.buildingManager = null;
     this.mapData = null;
-    this.tileClickCallback = null;
+    
+    // Drag detection for distinguishing clicks from pans
+    this.pointerStartX = null;
+    this.pointerStartY = null;
+    this.isDragging = false;
+    this.dragThreshold = 5; // pixels
   }
 
   preload() {
@@ -71,51 +75,39 @@ export class MapScene extends Phaser.Scene {
    * @param {function} callback - Callback function(x, y) called when a valid tile is clicked
    */
   setupTileClickDetection(callback) {
-    this.tileClickCallback = callback;
-    this.pointerStartX = null;
-    this.pointerStartY = null;
-
-    this.input.on("pointerdown", (pointer) => {
-      // Store start position to detect dragging
+    // Pass callback to tile manager which handles all click detection
+    // with perfect elevation-aware coordinate mapping using Phaser's built-in hit detection
+    if (this.tileManager) {
+      this.tileManager.setTileClickCallback(callback);
+    }
+    
+    // Set up drag detection to prevent turret placement while panning the map
+    this.input.on('pointerdown', (pointer) => {
       this.pointerStartX = pointer.x;
       this.pointerStartY = pointer.y;
+      this.isDragging = false;
     });
-
-    this.input.on("pointerup", (pointer) => {
-      if (!this.mapData || !this.tileClickCallback) {
-        return;
-      }
-
-      // Check if this was a drag (pointer moved significantly)
-      const dragThreshold = 5;
-      if (
-        this.pointerStartX !== null &&
-        (Math.abs(pointer.x - this.pointerStartX) > dragThreshold ||
-          Math.abs(pointer.y - this.pointerStartY) > dragThreshold)
-      ) {
-        // This was a drag, not a click
-        return;
-      }
-
-      // Get world position from screen position
-      const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-      const worldX = worldPoint.x;
-      const worldY = worldPoint.y;
-
-      // Convert to cartesian tile coordinates
-      const { x, y } = isometricToCartesian(worldX, worldY);
-
-      // Validate coordinates are within map
-      if (
-        x >= 0 &&
-        x < this.mapData.width &&
-        y >= 0 &&
-        y < this.mapData.height
-      ) {
-        // Call the callback with tile coordinates
-        this.tileClickCallback(x, y);
+    
+    this.input.on('pointermove', (pointer) => {
+      if (this.pointerStartX !== null) {
+        const deltaX = Math.abs(pointer.x - this.pointerStartX);
+        const deltaY = Math.abs(pointer.y - this.pointerStartY);
+        if (deltaX > this.dragThreshold || deltaY > this.dragThreshold) {
+          this.isDragging = true;
+        }
       }
     });
+    
+    this.input.on('pointerup', () => {
+      this.pointerStartX = null;
+      this.pointerStartY = null;
+      this.isDragging = false;
+    });
+    
+    // Pass drag state to tile manager so it can ignore clicks during drags
+    if (this.tileManager) {
+      this.tileManager.setDragChecker(() => this.isDragging);
+    }
   }
 
   /**

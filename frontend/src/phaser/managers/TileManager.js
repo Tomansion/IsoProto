@@ -23,6 +23,27 @@ export class TileManager {
     this.scene = scene;
     this.layerManager = layerManager;
     this.tiles = [];
+    this.tileClickCallback = null;
+    this.dragChecker = null;
+    this.pointerStartX = null;
+    this.pointerStartY = null;
+    this.dragThreshold = 5;
+  }
+
+  /**
+   * Set the callback for tile clicks
+   * @param {function} callback - Callback function(x, y) called when a tile is clicked
+   */
+  setTileClickCallback(callback) {
+    this.tileClickCallback = callback;
+  }
+
+  /**
+   * Set a function to check if currently dragging
+   * @param {function} dragChecker - Function that returns true if dragging
+   */
+  setDragChecker(dragChecker) {
+    this.dragChecker = dragChecker;
   }
 
   /**
@@ -44,7 +65,12 @@ export class TileManager {
         const tileElevation = elevation && elevation[y] ? elevation[y][x] : 0;
 
         // Always render ground tile
-        this.renderGroundTile(x, y, tileElevation);
+        this.renderGroundTile(
+          x,
+          y,
+          tileElevation,
+          tileType !== TILE_TREE && tileElevation > 0,
+        );
         groundCount++;
 
         // Render tree if present
@@ -61,8 +87,9 @@ export class TileManager {
    * @param {number} x - Cartesian X coordinate
    * @param {number} y - Cartesian Y coordinate
    * @param {number} elevation - Elevation value
+   * @param {boolean} isInteractive - Whether the tile is interactive (not a tree)
    */
-  renderGroundTile(x, y, elevation = 0) {
+  renderGroundTile(x, y, elevation = 0, isInteractive = true) {
     const iso = cartesianToIsometric(x, y, elevation);
     const depth = getDepthForTile(x, y);
 
@@ -81,6 +108,43 @@ export class TileManager {
     sprite.setDepth(depth);
     sprite.setOrigin(0.5, 0.5);
     sprite.setScale(TILE_SIZE / 32);
+
+    sprite.tileX = x;
+    sprite.tileY = y;
+    // Make sprite interactive with custom hit area
+    if (isInteractive) {
+      sprite.setInteractive({
+        draggable: true,
+        useHandCursor: true,
+        pixelPerfect: true,
+        alphaTolerance: 1,
+      });
+
+      // Track pointer movement for this tile
+      let tilePointerStartX = null;
+      let tilePointerStartY = null;
+
+      sprite.on("pointerdown", (pointer) => {
+        tilePointerStartX = pointer.x;
+        tilePointerStartY = pointer.y;
+      });
+
+      sprite.on("pointerup", (pointer) => {
+        // Check if pointer moved during press (drag vs click)
+        const deltaX = Math.abs(pointer.x - tilePointerStartX);
+        const deltaY = Math.abs(pointer.y - tilePointerStartY);
+        const wasDrag =
+          deltaX > this.dragThreshold || deltaY > this.dragThreshold;
+
+        // Only register tile click if it was a click, not a drag
+        if (this.tileClickCallback && !wasDrag) {
+          this.tileClickCallback(x, y);
+        }
+
+        tilePointerStartX = null;
+        tilePointerStartY = null;
+      });
+    }
 
     this.tiles.push(sprite);
   }
@@ -117,6 +181,8 @@ export class TileManager {
   clearTiles() {
     this.tiles.forEach((tile) => {
       if (tile) {
+        tile.off("pointerdown");
+        tile.off("pointerup");
         tile.destroy();
       }
     });
