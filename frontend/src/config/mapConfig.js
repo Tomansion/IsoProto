@@ -87,6 +87,16 @@ export const TURRET_FRAMES = {
   7: 8, // DOWN_RIGHT
 };
 
+// Zombie (mob) spritesheet asset — 6 frames, left-to-right walk animation
+export const ZOMBIE_ASSET = {
+  key: "zombie",
+  url: "/images/entities/zombie.png",
+  frameWidth: 32,
+  frameHeight: 32,
+};
+
+export const ZOMBIE_ANIM_FRAMERATE = 8;
+
 export default {
   TILE_EMPTY,
   TILE_TREE,
@@ -99,4 +109,6 @@ export default {
   TURRET_SHEET_ASSET,
   TURRET_ORIENTATIONS,
   TURRET_FRAMES,
+  ZOMBIE_ASSET,
+  ZOMBIE_ANIM_FRAMERATE,
 };

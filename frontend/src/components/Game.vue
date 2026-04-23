@@ -144,7 +144,12 @@ export default {
             this.map = message.map;
             // Render map in Phaser
             phaserGameManager.renderMap(this.map);
-            
+
+            // Render initial mob positions from welcome message
+            if (message.mobs && message.mobs.length > 0) {
+              phaserGameManager.updateMobs(message.mobs);
+            }
+
             // Setup tile click detection AFTER map is ready
             // Wait for scene to be fully initialized
             setTimeout(() => {
@@ -181,6 +186,9 @@ export default {
               mapScene.renderTurret(message.data);
             }
           }
+          break;
+        case "mob_update":
+          phaserGameManager.updateMobs(message.data || []);
           break;
         case "action_error":
           console.warn("Action error:", message.message);

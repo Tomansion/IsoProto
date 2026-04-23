@@ -8,6 +8,7 @@ import LayerManager from "../phaser/managers/LayerManager.js";
 import TileManager from "../phaser/managers/TileManager.js";
 import CameraManager from "../phaser/managers/CameraManager.js";
 import BuildingManager from "../phaser/managers/BuildingManager.js";
+import MobManager from "../phaser/managers/MobManager.js";
 import { loadTileset } from "../utils/tilesetHelper.js";
 import { BUILDING_SHEET_ASSET, TURRET_SHEET_ASSET } from "../config/mapConfig.js";
 
@@ -18,6 +19,7 @@ export class MapScene extends Phaser.Scene {
     this.tileManager = null;
     this.cameraManager = null;
     this.buildingManager = null;
+    this.mobManager = null;
     this.mapData = null;
     
     // Drag detection for distinguishing clicks from pans
@@ -30,6 +32,10 @@ export class MapScene extends Phaser.Scene {
   preload() {
     // Load the tileset image
     loadTileset(this);
+
+    // Load mob spritesheets
+    const tempMobManager = new MobManager(this);
+    tempMobManager.loadAssets();
 
     // Load building spritesheet
     if (!this.textures.exists(BUILDING_SHEET_ASSET.key)) {
@@ -63,6 +69,9 @@ export class MapScene extends Phaser.Scene {
 
     this.tileManager = new TileManager(this, this.layerManager);
     this.buildingManager = new BuildingManager(this);
+
+    this.mobManager = new MobManager(this);
+    this.mobManager.createAnimations();
 
     this.cameraManager = new CameraManager(this);
 
@@ -168,6 +177,18 @@ export class MapScene extends Phaser.Scene {
   }
 
   /**
+   * Update all mob sprites with the latest positions from the server.
+   * @param {Array} mobs - Array of mob data {id, x, y, hp, mob_type, elevation}
+   */
+  updateMobs(mobs) {
+    if (!this.mobManager) {
+      console.warn("MobManager not ready");
+      return;
+    }
+    this.mobManager.updateMobs(mobs);
+  }
+
+  /**
    * Render a single turret on the map
    * Called when a turret is placed
    * @param {object} turretData - Turret data {id, x, y, building_type, orientation, player_id}
@@ -187,6 +208,7 @@ export class MapScene extends Phaser.Scene {
   shutdown() {
     if (this.tileManager) this.tileManager.destroy();
     if (this.buildingManager) this.buildingManager.destroy();
+    if (this.mobManager) this.mobManager.destroy();
     if (this.layerManager) this.layerManager.destroy();
     if (this.cameraManager) this.cameraManager.destroy();
   }

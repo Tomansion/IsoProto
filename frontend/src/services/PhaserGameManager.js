@@ -75,6 +75,18 @@ export class PhaserGameManager {
   }
 
   /**
+   * Update mob sprites with the latest positions from server
+   * @param {Array} mobs - Array of mob data {id, x, y, hp, mob_type, elevation}
+   */
+  updateMobs(mobs) {
+    if (!this.mapScene) {
+      setTimeout(() => this.updateMobs(mobs), 100);
+      return;
+    }
+    this.mapScene.updateMobs(mobs);
+  }
+
+  /**
    * Destroy the Phaser game instance
    * Clean up all resources
    */

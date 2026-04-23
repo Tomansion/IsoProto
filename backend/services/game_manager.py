@@ -92,6 +92,31 @@ class GameManager:
             self.game_ws_connections[game_id] = []
         self.game_ws_connections[game_id].append(ws)
 
+    # Mob management
+    def tick_mobs(self, game_id: str) -> list:
+        """Move all mobs one tick toward their target.
+
+        Removes mobs that have reached their target.
+        Updates each mob's elevation from the current map tile.
+        Returns list of mob dicts for WS broadcasting.
+        """
+        game = self.games.get(game_id)
+        if not game:
+            return []
+
+        alive_mobs = []
+        for mob in game.mobs:
+            reached = mob.move_toward_target()
+            if not reached:
+                # Update elevation based on current map tile
+                tx = max(0, min(game.map.width - 1, int(mob.x)))
+                ty = max(0, min(game.map.height - 1, int(mob.y)))
+                mob.elevation = game.map.elevation[ty][tx]
+                alive_mobs.append(mob)
+
+        game.mobs = alive_mobs
+        return [m.to_dict() for m in game.mobs]
+
     # Turret management
     def add_turret_to_game(
         self, game_id: str, player_id: str, x: int, y: int

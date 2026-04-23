@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import datetime
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
@@ -13,6 +14,7 @@ class GameConnectionManager:
     def __init__(self):
         self.game_connections: dict[str, list[WebSocket]] = {}  # game_id -> connections
         self.lobby_connections: list[WebSocket] = []  # All lobby viewers
+        self.game_loop_tasks: dict[str, asyncio.Task] = {}  # game_id -> running loop task
 
     async def connect_game(self, game_id: str, websocket: WebSocket):
         """Accept a new WebSocket connection for a game."""
@@ -21,6 +23,44 @@ class GameConnectionManager:
             self.game_connections[game_id] = []
         self.game_connections[game_id].append(websocket)
         game_manager.add_ws_connection(game_id, websocket)
+        # Start the game loop when the first player connects
+        self.start_game_loop(game_id)
+
+    def start_game_loop(self, game_id: str) -> None:
+        """Start the game tick loop for a game if not already running."""
+        existing = self.game_loop_tasks.get(game_id)
+        if existing is None or existing.done():
+            task = asyncio.create_task(self._game_loop(game_id))
+            self.game_loop_tasks[game_id] = task
+
+    def stop_game_loop(self, game_id: str) -> None:
+        """Cancel the game tick loop for a game."""
+        task = self.game_loop_tasks.pop(game_id, None)
+        if task and not task.done():
+            task.cancel()
+
+    async def _game_loop(self, game_id: str) -> None:
+        """Game tick loop: move mobs and broadcast positions every second."""
+        try:
+            while True:
+                await asyncio.sleep(0.1)
+
+                # Stop if the game no longer has active connections
+                connections = self.game_connections.get(game_id)
+                if not connections:
+                    break
+
+                game = game_manager.get_game(game_id)
+                if not game:
+                    break
+
+                mob_dicts = game_manager.tick_mobs(game_id)
+                await self.broadcast_game(
+                    game_id,
+                    {"type": "mob_update", "data": mob_dicts},
+                )
+        except asyncio.CancelledError:
+            pass  # Graceful shutdown
 
     async def connect_lobby(self, websocket: WebSocket):
         """Accept a new WebSocket connection for lobby."""
@@ -133,13 +173,14 @@ async def websocket_endpoint(
                 game_manager.add_player_to_game(game_id, player)
                 print(f"Player {player_name} rejoined game {game_id}")
 
-        # Send welcome message with map details
+        # Send welcome message with map details and initial mob state
         await websocket.send_json(
             {
                 "type": "welcome",
                 "message": f"Welcome {player_name}!",
                 "timestamp": datetime.utcnow().isoformat(),
                 "map": game.map.to_dict(),
+                "mobs": [m.to_dict() for m in game.mobs],
             }
         )
 
@@ -249,7 +290,8 @@ async def websocket_endpoint(
             game.nb_players = len(game.players)
 
             if game.nb_players == 0:
-                # Delete game if empty
+                # Stop the game loop and delete the game
+                manager.stop_game_loop(game_id)
                 game_manager.delete_game(game_id)
                 # Notify lobby of deletion
                 await manager.broadcast_lobby(
