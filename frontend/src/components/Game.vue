@@ -57,6 +57,7 @@ export default {
       playerName: "",
       websocket: null,
       map: null,
+      mobs: [],
       connectionTimeout: null,
     };
   },
@@ -142,12 +143,14 @@ export default {
         case "welcome":
           if (message.map) {
             this.map = message.map;
+            // Initialize mobs list from welcome message
+            this.mobs = message.mobs || [];
             // Render map in Phaser
             phaserGameManager.renderMap(this.map);
 
-            // Render initial mob positions from welcome message
-            if (message.mobs && message.mobs.length > 0) {
-              phaserGameManager.updateMobs(message.mobs);
+            // Render initial mob positions
+            if (this.mobs.length > 0) {
+              phaserGameManager.updateMobs(this.mobs);
             }
 
             // Setup tile click detection AFTER map is ready
@@ -188,10 +191,19 @@ export default {
           }
           break;
         case "mob_update":
-          phaserGameManager.updateMobs(message.data || []);
+          // Complete mob list update - replace the entire list
+          this.mobs = message.data || [];
+          phaserGameManager.updateMobs(this.mobs);
           break;
         case "turret_rotation":
           phaserGameManager.updateTurretRotations(message.data || []);
+          break;
+        case "mob_spawned":
+          // Add newly spawned mobs to our tracking list
+          const newMobs = message.data || [];
+          this.mobs = [...this.mobs, ...newMobs];
+          // Always update with complete list to avoid deletion
+          phaserGameManager.updateMobs(this.mobs);
           break;
         case "action_error":
           console.warn("Action error:", message.message);

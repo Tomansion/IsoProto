@@ -3,6 +3,7 @@ import random
 from models.game import Game
 from models.player import Player
 from models.turret import Turret
+from models.mob import Zombie
 from config import TILE_TREE
 
 
@@ -192,6 +193,44 @@ class GameManager:
                     )
 
         return rotations
+
+    def spawn_mobs(self, game_id: str) -> list:
+        """Process mob spawning based on spawner waves.
+
+        The spawner manages wave timing and spawn sequencing internally.
+        This method creates Zombie objects at spawn positions returned by the spawner.
+        Returns list of newly spawned mob dicts for WS broadcasting.
+        """
+        game = self.games.get(game_id)
+        if not game:
+            return []
+
+        spawner = game.mob_spawner
+
+        # Check if we can spawn more mobs (respects max_mobs limit)
+        if not spawner.can_spawn_more(len(game.mobs)):
+            return []
+
+        # Tick the spawner - it returns spawn positions for this tick
+        spawn_positions = spawner.tick()
+        if not spawn_positions:
+            return []
+
+        # Create Zombie objects at each spawn position
+        new_mobs = []
+        for x, y in spawn_positions:
+            elevation = game.map.elevation[y][x]
+            zombie = Zombie(
+                x=float(x),
+                y=float(y),
+                target_x=game.map.width / 2,
+                target_y=game.map.height / 2,
+                elevation=elevation,
+            )
+            game.mobs.append(zombie)
+            new_mobs.append(zombie)
+
+        return [m.to_dict() for m in new_mobs]
 
 
 # Global game manager instance

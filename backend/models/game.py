@@ -4,10 +4,9 @@ from typing import Dict, Optional, List
 from models.player import Player
 from models.map import Map
 from models.mob import Zombie
+from services.mob_spawner import MobSpawner
+from config import MOB_SPAWN_CONFIG
 from datetime import datetime
-
-TILE_TREE = 1  # Keep local to avoid circular import
-MOB_SPAWN_COUNT = 50
 
 
 class Game:
@@ -29,35 +28,9 @@ class Game:
         if seed is None:
             seed = random.randint(0, 2**31 - 1)
         self.map = Map(seed=seed)
-        self._spawn_mobs(MOB_SPAWN_COUNT)
-
-    def _spawn_mobs(self, count: int = 5) -> None:
-        """Spawn initial zombies at random valid positions on the map."""
-        spawned = 0
-        attempts = 0
-        while spawned < count and attempts < 2000:
-            attempts += 1
-            x = random.randint(0, self.map.width - 1)
-            y = random.randint(0, self.map.height - 1)
-
-            # Skip tree tiles
-            if self.map.tiles[y][x] == TILE_TREE:
-                continue
-
-            # Skip water tiles (elevation <= 0)
-            elevation = self.map.elevation[y][x]
-            if elevation <= 0:
-                continue
-
-            zombie = Zombie(
-                x=float(x),
-                y=float(y),
-                target_x=self.map.width / 2,
-                target_y=self.map.height / 2,
-                elevation=elevation,
-            )
-            self.mobs.append(zombie)
-            spawned += 1
+        
+        # Initialize mob spawner for progressive wave-based spawning
+        self.mob_spawner = MobSpawner(self.map, MOB_SPAWN_CONFIG)
 
     def to_dict(self) -> Dict:
         """Convert the Game object to a dictionary for storage."""
