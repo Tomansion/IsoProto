@@ -34,7 +34,7 @@ export class BuildingManager {
         },
       );
     }
-    
+
     if (!this.scene.textures.exists(TURRET_SHEET_ASSET.key)) {
       this.scene.load.spritesheet(
         TURRET_SHEET_ASSET.key,
@@ -112,8 +112,8 @@ export class BuildingManager {
 
     // Convert to isometric coordinates
     // Turrets are 96x96 px (3x3 tiles), offset them to sit on the ground properly
-    const iso = cartesianToIsometric(x - 2, y-2 , elevation);
-    const baseDepth = getDepthForTile(x + 10, y + 10); 
+    const iso = cartesianToIsometric(x - 2, y - 2, elevation);
+    const baseDepth = getDepthForTile(x + 10, y + 10);
     const headDepth = baseDepth + 1; // Head always in front of base
 
     // Create turret base sprite (always frame 0)
@@ -171,10 +171,33 @@ export class BuildingManager {
   }
 
   /**
-   * Destroy building manager
+   * Update turret head sprites to show new orientations.
+   * @param {Array} rotations - Array of turret rotation data {id, orientation}
    */
-  destroy() {
-    this.clearBuildings();
+  updateTurretRotations(rotations) {
+    if (!rotations || rotations.length === 0) return;
+
+    // Create a map of building IDs to rotation data for quick lookup
+    const rotationMap = new Map();
+    for (const rotation of rotations) {
+      rotationMap.set(rotation.id, rotation);
+    }
+
+    // Find and update turret head sprites
+    for (const building of this.buildings) {
+      if (!building.turretId) continue;
+
+      const rotation = rotationMap.get(building.turretId);
+      if (!rotation) continue;
+
+      // Only update head sprites (they have a baseSprite reference)
+      if (building.baseSprite) {
+        // This is a head sprite, update its frame
+        const newFrame =
+          TURRET_FRAMES[rotation.orientation] || TURRET_FRAMES[0];
+        building.setFrame(newFrame);
+      }
+    }
   }
 }
 

@@ -177,7 +177,7 @@ export class MapScene extends Phaser.Scene {
   }
 
   /**
-   * Update all mob sprites with the latest positions from the server.
+   * Update mob sprites with the latest positions from server.
    * @param {Array} mobs - Array of mob data {id, x, y, hp, mob_type, elevation}
    */
   updateMobs(mobs) {
@@ -186,6 +186,18 @@ export class MapScene extends Phaser.Scene {
       return;
     }
     this.mobManager.updateMobs(mobs);
+  }
+
+  /**
+   * Update turret head sprites to show new orientations.
+   * @param {Array} rotations - Array of turret rotation data {id, orientation}
+   */
+  updateTurretRotations(rotations) {
+    if (!this.buildingManager) {
+      console.warn("BuildingManager not ready");
+      return;
+    }
+    this.buildingManager.updateTurretRotations(rotations);
   }
 
   /**

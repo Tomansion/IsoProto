@@ -40,7 +40,7 @@ class GameConnectionManager:
             task.cancel()
 
     async def _game_loop(self, game_id: str) -> None:
-        """Game tick loop: move mobs and broadcast positions every second."""
+        """Game tick loop: move mobs, update turrets and broadcast positions every iteration."""
         try:
             while True:
                 await asyncio.sleep(0.1)
@@ -54,11 +54,20 @@ class GameConnectionManager:
                 if not game:
                     break
 
+                # Update mobs
                 mob_dicts = game_manager.tick_mobs(game_id)
                 await self.broadcast_game(
                     game_id,
                     {"type": "mob_update", "data": mob_dicts},
                 )
+
+                # Update turrets and broadcast rotation changes
+                turret_rotations = game_manager.tick_turrets(game_id)
+                if turret_rotations:
+                    await self.broadcast_game(
+                        game_id,
+                        {"type": "turret_rotation", "data": turret_rotations},
+                    )
         except asyncio.CancelledError:
             pass  # Graceful shutdown
 

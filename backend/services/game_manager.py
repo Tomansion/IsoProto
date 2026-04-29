@@ -2,7 +2,7 @@ from typing import Dict, Optional, List, Set
 import random
 from models.game import Game
 from models.player import Player
-from models.map import Building
+from models.turret import Turret
 from config import TILE_TREE
 
 
@@ -120,20 +120,20 @@ class GameManager:
     # Turret management
     def add_turret_to_game(
         self, game_id: str, player_id: str, x: int, y: int
-    ) -> Optional[Building]:
+    ) -> Optional[Turret]:
         """Add a turret to a game map at the given coordinates.
-        
+
         Validates placement: tile must be empty (no trees/buildings) and not water.
-        Assigns random orientation (0-7).
-        
-        Returns the created turret Building object or None if validation fails.
+        Sets orientation based on closest mob position.
+
+        Returns the created turret Turret object or None if validation fails.
         """
         game = self.games.get(game_id)
         if not game:
             return None
 
         map_obj = game.map
-        
+
         # Validate coordinates are within map
         if x < 0 or y < 0 or x >= map_obj.width or y >= map_obj.height:
             return None
@@ -154,17 +154,44 @@ class GameManager:
 
         # All validation passed - create turret with random orientation
         orientation = random.randint(0, 7)
-        turret = Building(
+        turret = Turret(
             x=x,
             y=y,
             building_id=0,  # Turret base frame
-            building_type="turret",
             player_id=player_id,
             orientation=orientation,
         )
-        
+
+        # Set correct orientation based on closest mob
+        turret.update_target(game.mobs)
+
         map_obj.buildings.append(turret)
         return turret
+
+    def tick_turrets(self, game_id: str) -> list:
+        """Update all turrets to track closest mobs.
+
+        Returns list of turret rotation updates [{id, orientation}, ...]
+        for only turrets that changed orientation.
+        """
+        game = self.games.get(game_id)
+        if not game:
+            return []
+
+        rotations = []
+        for building in game.map.buildings:
+            # Only update turrets
+            if isinstance(building, Turret):
+                new_orientation = building.update_target(game.mobs)
+                if new_orientation is not None:
+                    rotations.append(
+                        {
+                            "id": building.id,
+                            "orientation": new_orientation,
+                        }
+                    )
+
+        return rotations
 
 
 # Global game manager instance

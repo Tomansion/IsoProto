@@ -190,6 +190,9 @@ export default {
         case "mob_update":
           phaserGameManager.updateMobs(message.data || []);
           break;
+        case "turret_rotation":
+          phaserGameManager.updateTurretRotations(message.data || []);
+          break;
         case "action_error":
           console.warn("Action error:", message.message);
           // Could add visual feedback here for failed turret placement

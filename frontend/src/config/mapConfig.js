@@ -62,29 +62,18 @@ export const TURRET_SHEET_ASSET = {
   frameHeight: 96,
 };
 
-// Turret orientation constants
-export const TURRET_ORIENTATIONS = {
-  DOWN: 0,
-  DOWN_LEFT: 1,
-  LEFT: 2,
-  UP_LEFT: 3,
-  UP: 4,
-  UP_RIGHT: 5,
-  RIGHT: 6,
-  DOWN_RIGHT: 7,
-};
 
 // Turret frame mapping: orientation -> head sprite frame (base is always 0)
 export const TURRET_FRAMES = {
   BASE: 0,
-  0: 1, // DOWN
-  1: 2, // DOWN_LEFT
-  2: 3, // LEFT
-  3: 4, // UP_LEFT
-  4: 5, // UP
-  5: 6, // UP_RIGHT
-  6: 7, // RIGHT
-  7: 8, // DOWN_RIGHT
+  0: 8, // DOWN
+  1: 1, // DOWN_LEFT
+  2: 2, // LEFT
+  3: 3, // UP_LEFT
+  4: 4, // UP
+  5: 5, // UP_RIGHT
+  6: 6, // RIGHT
+  7: 7, // DOWN_RIGHT
 };
 
 // Zombie (mob) spritesheet asset — 6 frames, left-to-right walk animation
@@ -107,7 +96,6 @@ export default {
   TILESET_ASSET,
   BUILDING_SHEET_ASSET,
   TURRET_SHEET_ASSET,
-  TURRET_ORIENTATIONS,
   TURRET_FRAMES,
   ZOMBIE_ASSET,
   ZOMBIE_ANIM_FRAMERATE,

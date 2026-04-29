@@ -87,6 +87,18 @@ export class PhaserGameManager {
   }
 
   /**
+   * Update turret rotations
+   * @param {Array} rotations - Array of turret rotation data {id, orientation}
+   */
+  updateTurretRotations(rotations) {
+    if (!this.mapScene) {
+      setTimeout(() => this.updateTurretRotations(rotations), 100);
+      return;
+    }
+    this.mapScene.updateTurretRotations(rotations);
+  }
+
+  /**
    * Destroy the Phaser game instance
    * Clean up all resources
    */
