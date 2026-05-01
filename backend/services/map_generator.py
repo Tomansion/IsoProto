@@ -88,6 +88,6 @@ class MapGenerator:
         min_elevation = min(min(row) for row in elevation)
         for y in range(self.height):
             for x in range(self.width):
-                elevation[y][x] = max(0, elevation[y][x] - min_elevation - 5)
+                elevation[y][x] = max(0, elevation[y][x] - min_elevation - 8)
 
         return tiles, elevation

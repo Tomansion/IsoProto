@@ -96,8 +96,6 @@ class MobSpawner:
 
         A valid spawn position must:
         - Be within map bounds
-        - Not be a tree or water
-        - Be on land (elevation > 0)
 
         Args:
             x: X coordinate
@@ -107,14 +105,6 @@ class MobSpawner:
             True if the position is valid for spawning
         """
         if x < 0 or x >= self.map.width or y < 0 or y >= self.map.height:
-            return False
-
-        # Check if it's a tree
-        if self.map.tiles[y][x] == 1:  # TILE_TREE
-            return False
-
-        # Check if it's water (elevation <= 0)
-        if self.map.elevation[y][x] <= 0:
             return False
 
         return True

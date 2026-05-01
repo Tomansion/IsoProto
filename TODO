@@ -1,4 +1,12 @@
 ✔ Fix tile click detection due to elevation @done(26-04-23 22:50)
+☐ Fix path not found whan on turrets 
+☐ Add random turret movement when no target
+☐ change water to a single sprite (circular ?)
+☐ Use pathfinding config
+☐ Fix mob facing target and not next waypoint
+☐ Slow in forest & water
 ☐ Fix building elevation by placing structure blocks bellow them
 ☐ Fixe the overall deph issues
 ☐ Place players cursor
+☐ Make an island
+☐ Optimize path refresh so that it clears only if blocked

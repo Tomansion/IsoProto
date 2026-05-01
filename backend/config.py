@@ -36,3 +36,16 @@ MOB_SPAWN_CONFIG = {
     "spawn_spread": 5,             # Random offset along the edge for each mob (±N)
     "total_waves": 20,             # Total number of waves to spawn
 }
+
+# Pathfinding and movement configuration
+PATHFINDING_CONFIG = {
+    "terrain_costs": {
+        "water": 20.0,            # Water is strongly avoided
+        "tree": 2.0,               # Trees add slight cost but passable
+        "min_cost": 0.2,           # Minimum movement cost to prevent negative values
+    },
+    "elevation_costs": {
+        "uphill_multiplier": 2.0,  # Cost multiplier for going uphill
+        "downhill_multiplier": 0.5,  # Cost multiplier for going downhill (preferred)
+    },
+}

@@ -97,6 +97,7 @@ class GameManager:
     def tick_mobs(self, game_id: str) -> list:
         """Move all mobs one tick toward their target.
 
+        Updates blocked tiles from turrets, moves mobs along their paths.
         Removes mobs that have reached their target.
         Updates each mob's elevation from the current map tile.
         Returns list of mob dicts for WS broadcasting.
@@ -167,6 +168,12 @@ class GameManager:
         turret.update_target(game.mobs)
 
         map_obj.buildings.append(turret)
+
+        # Invalidate all cached paths since terrain changed
+        game.pathfinding.clear_cache()
+        # Update blocked tiles from turrets
+        game.pathfinding.update_blocked_tiles(game.map.buildings)
+
         return turret
 
     def tick_turrets(self, game_id: str) -> list:
@@ -226,6 +233,8 @@ class GameManager:
                 target_x=game.map.width / 2,
                 target_y=game.map.height / 2,
                 elevation=elevation,
+                pathfinding_manager=game.pathfinding,
+                map_obj=game.map,
             )
             game.mobs.append(zombie)
             new_mobs.append(zombie)
@@ -233,5 +242,4 @@ class GameManager:
         return [m.to_dict() for m in new_mobs]
 
 
-# Global game manager instance
 game_manager = GameManager()
