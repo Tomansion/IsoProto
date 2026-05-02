@@ -203,7 +203,7 @@ export default {
           phaserGameManager.updateTurretRotations(message.data || []);
           break;
         case "turret_shot":
-          phaserGameManager.playShotAnimations(message.data || []);
+          phaserGameManager.playShotAnimations(message.data || [], this.mobs);
           break;
         case "mob_spawned":
           // Add newly spawned mobs to our tracking list

@@ -12,6 +12,7 @@ import {
   TURRET_SHEET_ASSET,
   TURRET_FRAMES,
   TURRET_SHOT_FRAMES,
+  EXPLOSION_ASSET,
 } from "../../config/mapConfig.js";
 
 export class BuildingManager {
@@ -202,8 +203,19 @@ export class BuildingManager {
    * Play shot animations for turrets.
    * @param {Array} shots - Array of shot data {turret_id, turret_x, turret_y, orientation, mob_id, damage}
    */
-  playShotAnimations(shots) {
+  /**
+   * Play shot animations for turrets.
+   * @param {Array} shots - Array of shot data {turret_id, turret_x, turret_y, orientation, mob_id, damage}
+   * @param {Array} mobs - Array of mob data {id, x, y, elevation, ...} to find target positions
+   */
+  playShotAnimations(shots, mobs = []) {
     if (!shots || shots.length === 0) return;
+
+    // Create a map of mob IDs to their positions for quick lookup
+    const mobMap = new Map();
+    for (const mob of mobs) {
+      mobMap.set(mob.id, mob);
+    }
 
     for (const shot of shots) {
       // Find turret base sprite by turret_id
@@ -230,6 +242,32 @@ export class BuildingManager {
       this.scene.time.delayedCall(200, () => {
         shotSprite.destroy();
       });
+
+      // Play explosion animation at target mob location
+      const targetMob = mobMap.get(shot.mob_id);
+      if (targetMob) {
+        const explosionIso = cartesianToIsometric(
+          targetMob.x,
+          targetMob.y,
+          targetMob.elevation || 0,
+        );
+        const explosionDepth = getDepthForTile(targetMob.x, targetMob.y) + 10; // High depth to appear on top
+
+        const explosionSprite = this.scene.add.sprite(
+          explosionIso.screenX,
+          explosionIso.screenY,
+          EXPLOSION_ASSET.key,
+          0, // Start at frame 0
+        );
+        explosionSprite.setDepth(explosionDepth);
+        explosionSprite.setOrigin(0.5, 1);
+
+        // Play the explosion animation, then destroy the sprite
+        explosionSprite.play("explosion");
+        explosionSprite.on("animationcomplete", () => {
+          explosionSprite.destroy();
+        });
+      }
     }
   }
 }

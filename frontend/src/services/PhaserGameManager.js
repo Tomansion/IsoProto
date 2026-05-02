@@ -101,13 +101,14 @@ export class PhaserGameManager {
   /**
    * Play turret shot animations
    * @param {Array} shots - Array of shot data {turret_id, turret_x, turret_y, orientation, mob_id, damage}
+   * @param {Array} mobs - Array of mob data {id, x, y, elevation, ...} for explosion locations
    */
-  playShotAnimations(shots) {
+  playShotAnimations(shots, mobs = []) {
     if (!this.mapScene) {
-      setTimeout(() => this.playShotAnimations(shots), 100);
+      setTimeout(() => this.playShotAnimations(shots, mobs), 100);
       return;
     }
-    this.mapScene.playShotAnimations(shots);
+    this.mapScene.playShotAnimations(shots, mobs);
   }
 
   /**

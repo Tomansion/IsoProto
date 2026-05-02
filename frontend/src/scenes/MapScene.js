@@ -10,7 +10,7 @@ import CameraManager from "../phaser/managers/CameraManager.js";
 import BuildingManager from "../phaser/managers/BuildingManager.js";
 import MobManager from "../phaser/managers/MobManager.js";
 import { loadTileset } from "../utils/tilesetHelper.js";
-import { BUILDING_SHEET_ASSET, TURRET_SHEET_ASSET } from "../config/mapConfig.js";
+import { BUILDING_SHEET_ASSET, TURRET_SHEET_ASSET, EXPLOSION_ASSET, EXPLOSION_ANIM_FRAMERATE } from "../config/mapConfig.js";
 
 export class MapScene extends Phaser.Scene {
   constructor() {
@@ -60,6 +60,18 @@ export class MapScene extends Phaser.Scene {
         },
       );
     }
+
+    // Load explosion spritesheet
+    if (!this.textures.exists(EXPLOSION_ASSET.key)) {
+      this.load.spritesheet(
+        EXPLOSION_ASSET.key,
+        EXPLOSION_ASSET.url,
+        {
+          frameWidth: EXPLOSION_ASSET.frameWidth,
+          frameHeight: EXPLOSION_ASSET.frameHeight,
+        },
+      );
+    }
   }
 
   create() {
@@ -72,6 +84,19 @@ export class MapScene extends Phaser.Scene {
 
     this.mobManager = new MobManager(this);
     this.mobManager.createAnimations();
+
+    // Create explosion animation
+    if (!this.anims.exists("explosion")) {
+      this.anims.create({
+        key: "explosion",
+        frames: this.anims.generateFrameNumbers(EXPLOSION_ASSET.key, {
+          start: 0,
+          end: 9, // 10 frames (0-9)
+        }),
+        frameRate: EXPLOSION_ANIM_FRAMERATE,
+        repeat: 0,
+      });
+    }
 
     this.cameraManager = new CameraManager(this);
 
@@ -204,12 +229,17 @@ export class MapScene extends Phaser.Scene {
    * Play shot animations for turrets.
    * @param {Array} shots - Array of shot data {turret_id, turret_x, turret_y, orientation, mob_id, damage}
    */
-  playShotAnimations(shots) {
+  /**
+   * Play shot animations for turrets.
+   * @param {Array} shots - Array of shot data {turret_id, turret_x, turret_y, orientation, mob_id, damage}
+   * @param {Array} mobs - Array of mob data {id, x, y, elevation, ...} for explosion locations
+   */
+  playShotAnimations(shots, mobs = []) {
     if (!this.buildingManager) {
       console.warn("BuildingManager not ready");
       return;
     }
-    this.buildingManager.playShotAnimations(shots);
+    this.buildingManager.playShotAnimations(shots, mobs);
   }
 
   /**

@@ -99,6 +99,16 @@ export const ZOMBIE_ASSET = {
 
 export const ZOMBIE_ANIM_FRAMERATE = 8;
 
+// Explosion spritesheet asset — 10 frames of 96x96px explosion animation
+export const EXPLOSION_ASSET = {
+  key: "explosion",
+  url: "/images/explosion-sheet.png",
+  frameWidth: 96,
+  frameHeight: 96,
+};
+
+export const EXPLOSION_ANIM_FRAMERATE = 12;
+
 export default {
   TILE_EMPTY,
   TILE_TREE,
@@ -113,4 +123,6 @@ export default {
   TURRET_SHOT_FRAMES,
   ZOMBIE_ASSET,
   ZOMBIE_ANIM_FRAMERATE,
+  EXPLOSION_ASSET,
+  EXPLOSION_ANIM_FRAMERATE,
 };
