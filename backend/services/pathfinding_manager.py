@@ -15,7 +15,7 @@ class PathfindingManager:
     def __init__(self, map_obj):
         self.map = map_obj
         self.pathfinder = SimplePathfinder()
-        
+
         # Blocked tiles from turrets
         self.blocked_tiles: Set[Tuple[int, int]] = set()
         self.previously_blocked_tiles: Set[Tuple[int, int]] = set()
@@ -43,7 +43,7 @@ class PathfindingManager:
                         y = building.y + dy
                         if 0 <= x < self.map.width and 0 <= y < self.map.height:
                             self.blocked_tiles.add((x, y))
-        
+
         # Return newly blocked tiles
         return list(self.blocked_tiles - self.previously_blocked_tiles)
 
@@ -51,24 +51,26 @@ class PathfindingManager:
         """Get tiles that became blocked since last update."""
         return list(self.blocked_tiles - self.previously_blocked_tiles)
 
-    def should_invalidate_path(self, mob_x: float, mob_y: float, path: List[Tuple[int, int]]) -> bool:
+    def should_invalidate_path(
+        self, mob_x: float, mob_y: float, path: List[Tuple[int, int]]
+    ) -> bool:
         """Check if a path is affected by newly blocked tiles.
-        
+
         A path is affected if any waypoint or nearby tiles are blocked.
         Uses spatial proximity check with a buffer zone.
-        
+
         Args:
             mob_x, mob_y: Mob's current position
             path: List of waypoint tiles in the path
-            
+
         Returns:
             True if path should be invalidated and recalculated
         """
         if not path or not self.get_newly_blocked_tiles():
             return False
-        
+
         newly_blocked = self.get_newly_blocked_tiles()
-        
+
         # Check if any waypoint or nearby tiles are blocked
         # Include a 2-tile buffer around each waypoint
         for tile_x, tile_y in path:
@@ -76,7 +78,7 @@ class PathfindingManager:
                 for dy in [-2, -1, 0, 1, 2]:
                     if (tile_x + dx, tile_y + dy) in newly_blocked:
                         return True
-        
+
         # Also check tiles near current position
         cur_x = int(mob_x)
         cur_y = int(mob_y)
@@ -84,7 +86,7 @@ class PathfindingManager:
             for dy in [-2, -1, 0, 1, 2]:
                 if (cur_x + dx, cur_y + dy) in newly_blocked:
                     return True
-        
+
         return False
 
     def compute_path(
@@ -131,9 +133,15 @@ class PathfindingManager:
         """Invalidate path for a specific mob (e.g., when moving away from path)."""
         self.pathfinder.invalidate_mob_path(mob_id)
 
-    def invalidate_affected_paths(self, mob_x: float, mob_y: float, mob_id: str, cached_path: List[Tuple[int, int]]) -> None:
+    def invalidate_affected_paths(
+        self,
+        mob_x: float,
+        mob_y: float,
+        mob_id: str,
+        cached_path: List[Tuple[int, int]],
+    ) -> None:
         """Invalidate path only if it's affected by newly blocked tiles.
-        
+
         Args:
             mob_x, mob_y: Mob's current position
             mob_id: Mob identifier
@@ -143,7 +151,14 @@ class PathfindingManager:
             self.invalidate_mob_path(mob_id)
 
     def get_next_waypoint(
-        self, mob_id: str, mob_x: float, mob_y: float, target_x: int, target_y: int, mob_type: str = "zombie", pathfinding_config: dict = None
+        self,
+        mob_id: str,
+        mob_x: float,
+        mob_y: float,
+        target_x: int,
+        target_y: int,
+        mob_type: str = "zombie",
+        pathfinding_config: dict = None,
     ) -> Tuple[int, int]:
         """Get the next waypoint for a mob.
 
@@ -160,7 +175,15 @@ class PathfindingManager:
             Next waypoint as (x, y) coordinates
         """
         return self.pathfinder.get_next_waypoint(
-            mob_id, mob_x, mob_y, target_x, target_y, self.map, self.blocked_tiles, mob_type, pathfinding_config
+            mob_id,
+            mob_x,
+            mob_y,
+            target_x,
+            target_y,
+            self.map,
+            self.blocked_tiles,
+            mob_type,
+            pathfinding_config,
         )
 
     def advance_waypoint(self, mob_id: str) -> None:
@@ -170,4 +193,3 @@ class PathfindingManager:
     def reached_target(self, mob_id: str) -> None:
         """Notify that a mob reached its target."""
         self.pathfinder.reached_target(mob_id)
-

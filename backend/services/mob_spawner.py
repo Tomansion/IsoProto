@@ -24,7 +24,7 @@ class MobSpawner:
         """
         self.map = map_obj
         self.config = spawn_config
-        
+
         self.current_wave = 0
         self.ticks_since_last_wave = 0
         self.is_complete = False
@@ -58,9 +58,8 @@ class MobSpawner:
         Returns:
             Number of mobs for this wave
         """
-        return (
-            self.config["initial_wave_size"]
-            + (self.current_wave * self.config["wave_increment"])
+        return self.config["initial_wave_size"] + (
+            self.current_wave * self.config["wave_increment"]
         )
 
     def get_border_spawn_point(self) -> tuple:
@@ -109,7 +108,9 @@ class MobSpawner:
 
         return True
 
-    def get_sequence_spawn_position(self, edge: str, base_x: int, base_y: int) -> Optional[tuple]:
+    def get_sequence_spawn_position(
+        self, edge: str, base_x: int, base_y: int
+    ) -> Optional[tuple]:
         """Get a valid spawn position for the active sequence.
 
         Applies random spread along the edge direction:

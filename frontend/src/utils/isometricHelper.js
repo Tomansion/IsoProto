@@ -33,7 +33,7 @@ export function cartesianToIsometric(x, y, elevation = 0) {
  * @returns {object} {x, y} - Cartesian map coordinates
  */
 export function isometricToCartesian(screenX, screenY) {
-  const tileWidth = TILE_SIZE;  // 32
+  const tileWidth = TILE_SIZE; // 32
   const tileHeight = TILE_SIZE; // 32
 
   // Inverse isometric projection

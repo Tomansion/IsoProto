@@ -58,10 +58,9 @@ export const BUILDING_SHEET_ASSET = {
 export const TURRET_SHEET_ASSET = {
   key: "turret-sheet",
   url: "/images/turrets-sheet.png",
-  frameWidth: 32*5,
-  frameHeight: 32*5,
+  frameWidth: 32 * 5,
+  frameHeight: 32 * 5,
 };
-
 
 // Turret frame mapping: orientation -> head sprite frame (base is always 0)
 export const TURRET_FRAMES = {
@@ -79,7 +78,7 @@ export const TURRET_FRAMES = {
 // Turret shot fire effect frames: orientation -> shot sprite frame (second row)
 // Each orientation has a matching shot effect frame
 export const TURRET_SHOT_FRAMES = {
-  0: 9,  // DOWN
+  0: 9, // DOWN
   1: 10, // DOWN_LEFT
   2: 11, // LEFT
   3: 12, // UP_LEFT
@@ -93,8 +92,8 @@ export const TURRET_SHOT_FRAMES = {
 export const ZOMBIE_ASSET = {
   key: "zombie",
   url: "/images/entities/zombie.png",
-  frameWidth: 32,
-  frameHeight: 32,
+  frameWidth: 16,
+  frameHeight: 16,
 };
 
 export const ZOMBIE_ANIM_FRAMERATE = 8;

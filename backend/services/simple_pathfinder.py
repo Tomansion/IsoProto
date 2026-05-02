@@ -32,9 +32,11 @@ class SimplePathfinder:
 
         return True
 
-    def get_cost(self, x: int, y: int, map_obj, pathfinding_config: dict = None) -> float:
+    def get_cost(
+        self, x: int, y: int, map_obj, pathfinding_config: dict = None
+    ) -> float:
         """Get cost to enter a tile based on mob-specific configuration.
-        
+
         Args:
             x, y: Tile coordinates
             map_obj: Game map
@@ -43,7 +45,7 @@ class SimplePathfinder:
                 - tree_cost: Additional cost for trees (default 0.5)
                 - water_cost: Additional cost for water (default 10.0)
                 - randomness: Random variation factor (default 0.0)
-        
+
         Returns:
             Cost to enter the tile
         """
@@ -54,14 +56,14 @@ class SimplePathfinder:
                 "water_cost": 10.0,
                 "randomness": 0.0,
             }
-        
+
         base_cost = pathfinding_config.get("base_cost", 1.0)
         tree_cost = pathfinding_config.get("tree_cost", 0.5)
         water_cost = pathfinding_config.get("water_cost", 10.0)
         randomness = pathfinding_config.get("randomness", 0.0)
-        
+
         cost = base_cost
-        
+
         # Add randomness if configured
         if randomness > 0:
             cost += (random() - 0.5) * 2 * randomness * base_cost
@@ -227,7 +229,9 @@ class SimplePathfinder:
                 return cached
 
         # Compute new path
-        path = self.find_path(start_x, start_y, goal_x, goal_y, map_obj, blocked_tiles, pathfinding_config)
+        path = self.find_path(
+            start_x, start_y, goal_x, goal_y, map_obj, blocked_tiles, pathfinding_config
+        )
         self.path_cache[mob_id] = path
         return path
 
@@ -262,7 +266,15 @@ class SimplePathfinder:
         """
         # Get or compute path
         path = self.compute_path(
-            mob_id, mob_x, mob_y, goal_x, goal_y, map_obj, blocked_tiles, mob_type, pathfinding_config
+            mob_id,
+            mob_x,
+            mob_y,
+            goal_x,
+            goal_y,
+            map_obj,
+            blocked_tiles,
+            mob_type,
+            pathfinding_config,
         )
 
         # Initialize path index if not exists

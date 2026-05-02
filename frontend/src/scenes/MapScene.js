@@ -10,7 +10,12 @@ import CameraManager from "../phaser/managers/CameraManager.js";
 import BuildingManager from "../phaser/managers/BuildingManager.js";
 import MobManager from "../phaser/managers/MobManager.js";
 import { loadTileset } from "../utils/tilesetHelper.js";
-import { BUILDING_SHEET_ASSET, TURRET_SHEET_ASSET, EXPLOSION_ASSET, EXPLOSION_ANIM_FRAMERATE } from "../config/mapConfig.js";
+import {
+  BUILDING_SHEET_ASSET,
+  TURRET_SHEET_ASSET,
+  EXPLOSION_ASSET,
+  EXPLOSION_ANIM_FRAMERATE,
+} from "../config/mapConfig.js";
 
 export class MapScene extends Phaser.Scene {
   constructor() {
@@ -21,7 +26,7 @@ export class MapScene extends Phaser.Scene {
     this.buildingManager = null;
     this.mobManager = null;
     this.mapData = null;
-    
+
     // Drag detection for distinguishing clicks from pans
     this.pointerStartX = null;
     this.pointerStartY = null;
@@ -51,26 +56,18 @@ export class MapScene extends Phaser.Scene {
 
     // Load turret spritesheet
     if (!this.textures.exists(TURRET_SHEET_ASSET.key)) {
-      this.load.spritesheet(
-        TURRET_SHEET_ASSET.key,
-        TURRET_SHEET_ASSET.url,
-        {
-          frameWidth: TURRET_SHEET_ASSET.frameWidth,
-          frameHeight: TURRET_SHEET_ASSET.frameHeight,
-        },
-      );
+      this.load.spritesheet(TURRET_SHEET_ASSET.key, TURRET_SHEET_ASSET.url, {
+        frameWidth: TURRET_SHEET_ASSET.frameWidth,
+        frameHeight: TURRET_SHEET_ASSET.frameHeight,
+      });
     }
 
     // Load explosion spritesheet
     if (!this.textures.exists(EXPLOSION_ASSET.key)) {
-      this.load.spritesheet(
-        EXPLOSION_ASSET.key,
-        EXPLOSION_ASSET.url,
-        {
-          frameWidth: EXPLOSION_ASSET.frameWidth,
-          frameHeight: EXPLOSION_ASSET.frameHeight,
-        },
-      );
+      this.load.spritesheet(EXPLOSION_ASSET.key, EXPLOSION_ASSET.url, {
+        frameWidth: EXPLOSION_ASSET.frameWidth,
+        frameHeight: EXPLOSION_ASSET.frameHeight,
+      });
     }
   }
 
@@ -114,15 +111,15 @@ export class MapScene extends Phaser.Scene {
     if (this.tileManager) {
       this.tileManager.setTileClickCallback(callback);
     }
-    
+
     // Set up drag detection to prevent turret placement while panning the map
-    this.input.on('pointerdown', (pointer) => {
+    this.input.on("pointerdown", (pointer) => {
       this.pointerStartX = pointer.x;
       this.pointerStartY = pointer.y;
       this.isDragging = false;
     });
-    
-    this.input.on('pointermove', (pointer) => {
+
+    this.input.on("pointermove", (pointer) => {
       if (this.pointerStartX !== null) {
         const deltaX = Math.abs(pointer.x - this.pointerStartX);
         const deltaY = Math.abs(pointer.y - this.pointerStartY);
@@ -131,13 +128,13 @@ export class MapScene extends Phaser.Scene {
         }
       }
     });
-    
-    this.input.on('pointerup', () => {
+
+    this.input.on("pointerup", () => {
       this.pointerStartX = null;
       this.pointerStartY = null;
       this.isDragging = false;
     });
-    
+
     // Pass drag state to tile manager so it can ignore clicks during drags
     if (this.tileManager) {
       this.tileManager.setDragChecker(() => this.isDragging);
@@ -261,7 +258,9 @@ export class MapScene extends Phaser.Scene {
    */
   renderTurret(turretData) {
     if (!this.buildingManager || !this.mapData) {
-      console.warn("Cannot render turret: building manager or map data not ready");
+      console.warn(
+        "Cannot render turret: building manager or map data not ready",
+      );
       return;
     }
 

@@ -4,19 +4,24 @@
 ✔ Fix mob facing target and not next waypoint @done(26-05-02 19:31)
 ✔ Mob pathfinding config @done(26-05-02 19:31)
 ✔ Optimize path refresh so that it clears only if blocked @done(26-05-02 19:31)
-☐ Add random turret movement when no target
+✔ Make 8 turret shot animation @done(26-05-02 21:10)
+✔ Add random turret movement when no target @done(26-05-02 21:26)
+✔ Reduce zombies size @done(26-05-02 21:39)
 
 Graphisms:
-    ☐ Reduce zombies size
-    ☐ Make 8 turret shot animation
     ☐ Fix building elevation by placing structure blocks bellow them
+    ☐ Swimming animation
+    ☐ turret Spawn animation: drop from the sky
+    ☐ Make the 2 barrels of the turret shot one after the other 
 
 Optimization:
     ☐ change water to a single sprite (circular ?)
+    ☐ Unify ws messages, make smaller uuid
+    ☐ Make the path only move by 30 tile at a time
 
 Bugs fix:
-    ☐ Fix issue game closing when 1 person leaves
-    ☐ Fixe the overall deph issues
+    ☐ Fix issue game closing when 1 person leaves. it closes all games ?
+    ☐ Fix the overall deph issues
 
 Map Generation:
     ☐ Make an island
@@ -25,3 +30,5 @@ Features:
     ☐ Place players cursor
     ☐ Display available turret placement
     ☐ Display turret range 
+    ☐ Zoom in/out phone
+    ☐ Make the mob not visible when behind a tree

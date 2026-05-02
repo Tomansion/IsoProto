@@ -14,7 +14,9 @@ class GameConnectionManager:
     def __init__(self):
         self.game_connections: dict[str, list[WebSocket]] = {}  # game_id -> connections
         self.lobby_connections: list[WebSocket] = []  # All lobby viewers
-        self.game_loop_tasks: dict[str, asyncio.Task] = {}  # game_id -> running loop task
+        self.game_loop_tasks: dict[str, asyncio.Task] = (
+            {}
+        )  # game_id -> running loop task
 
     async def connect_game(self, game_id: str, websocket: WebSocket):
         """Accept a new WebSocket connection for a game."""
@@ -257,28 +259,28 @@ async def websocket_endpoint(
             # Handle different message types
             if message.get("type") == "player_action":
                 action_type = message.get("action_type")
-                
+
                 # Handle turret placement
                 if action_type == "place_turret":
                     action_data = message.get("data", {})
                     x = action_data.get("x")
                     y = action_data.get("y")
-                    
+
                     # Get the current game and player
                     game = game_manager.get_game(game_id)
                     if game is None:
                         continue
-                    
+
                     # Find player ID for this player_name
                     player = next(
                         (p for p in game.players if p.username == player_name), None
                     )
                     if player is None:
                         continue
-                    
+
                     # Attempt to place turret
                     turret = game_manager.add_turret_to_game(game_id, player.id, x, y)
-                    
+
                     if turret:
                         # Broadcast turret placement to all players in game
                         await manager.broadcast_game(

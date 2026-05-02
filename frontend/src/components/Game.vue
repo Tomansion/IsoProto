@@ -162,7 +162,7 @@ export default {
                   console.log("Tile clicked:", x, y);
                   this.handleTileClick(x, y);
                 });
-              } 
+              }
             }, 400);
           }
           break;

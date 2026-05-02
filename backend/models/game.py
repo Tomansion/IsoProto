@@ -30,10 +30,10 @@ class Game:
         if seed is None:
             seed = random.randint(0, 2**31 - 1)
         self.map = Map(seed=seed)
-        
+
         # Initialize mob spawner for progressive wave-based spawning
         self.mob_spawner = MobSpawner(self.map, MOB_SPAWN_CONFIG)
-        
+
         # Initialize pathfinding manager for weighted flow-field pathfinding
         self.pathfinding = PathfindingManager(self.map)
 

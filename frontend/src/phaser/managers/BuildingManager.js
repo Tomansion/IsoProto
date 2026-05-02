@@ -226,7 +226,10 @@ export class BuildingManager {
 
       // Get the shot frame for this orientation
       const shotFrame = TURRET_SHOT_FRAMES[shot.orientation];
-      if (shotFrame === undefined) throw new Error(`No shot frame defined for orientation ${shot.orientation}`);
+      if (shotFrame === undefined)
+        throw new Error(
+          `No shot frame defined for orientation ${shot.orientation}`,
+        );
 
       // Create a temporary shot effect sprite at the turret location
       const shotSprite = this.scene.add.sprite(

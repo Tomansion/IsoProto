@@ -40,12 +40,12 @@ MOB_SPAWN_CONFIG = {
 # Mob type configurations
 MOB_TYPE_CONFIG = {
     "zombie": {
-        "speed": 0.3,
+        "speed": 0.1,
         "hp": 10,
         "terrain_multipliers": {
-            "tree": 0.5,      # slower in forests
-            "water": 0.2,     # slower in water
-            "default": 1.0,   # Normal speed on other tiles
+            "tree": 0.5,  # slower in forests
+            "water": 0.2,  # slower in water
+            "default": 1.0,  # Normal speed on other tiles
         },
         "pathfinding": {
             "base_cost": 1.0,  # Base cost to move to a tile
@@ -58,9 +58,9 @@ MOB_TYPE_CONFIG = {
 # Turret type configurations
 TURRET_TYPE_CONFIG = {
     "basic": {
-        "damage": 30,           # Damage per shot
-        "fire_cooldown": 10,    # Game ticks between shots (0.1s per tick = 1.0s cooldown)
-        "range": 20.0,          # Maximum targeting distance
+        "damage": 30,  # Damage per shot
+        "fire_cooldown": 10,  # Game ticks between shots (0.1s per tick = 1.0s cooldown)
+        "range": 20.0,  # Maximum targeting distance
         "rotation_speed": 0.5,  # Rotations per tick (0.5 = half rotation per tick)
     },
 }

@@ -75,59 +75,59 @@ class Mob:
         """Get speed multiplier based on current terrain."""
         if not self.map_obj:
             return self.terrain_multipliers.get("default", 1.0)
-        
+
         tx = max(0, min(self.map_obj.width - 1, round(self.x)))
         ty = max(0, min(self.map_obj.height - 1, round(self.y)))
-        
+
         # Check if there's a tree at this location
         if self.map_obj.tiles[ty][tx] == 1:  # TILE_TREE
             return self.terrain_multipliers.get("tree", 1.0)
-        
+
         # Check if it's water (elevation <= 0)
         if self.map_obj.elevation[ty][tx] <= 0:
             return self.terrain_multipliers.get("water", 1.0)
-        
+
         return self.terrain_multipliers.get("default", 1.0)
 
     def _calculate_orientation(self, dx: float, dy: float) -> int:
         """Calculate orientation (0-7) from movement direction in isometric space.
-        
+
         Converts cartesian (map) direction to isometric screen direction.
         In isometric projection, world cardinal directions map to screen diagonals:
         - World +x → screen down-right diagonal
         - World +y → screen down-left diagonal
         - World -x → screen up-left diagonal
         - World -y → screen up-right diagonal
-        
+
         Orientation mapping (screen direction):
         0=DOWN, 1=DOWN_LEFT, 2=LEFT, 3=UP_LEFT,
         4=UP, 5=UP_RIGHT, 6=RIGHT, 7=DOWN_RIGHT
-        
+
         Isometric projection:
         screen_dx = dx - dy (positive = right on screen)
         screen_dy = dx + dy (positive = down on screen)
         """
         if dx == 0 and dy == 0:
             return self.orientation
-        
+
         # Convert to isometric screen direction
         screen_dx = dx - dy
         screen_dy = dx + dy
-        
-         # Use angle-based approach for 8 directions on screen
+
+        # Use angle-based approach for 8 directions on screen
         # atan2 gives angle in [-π, π] where 0 = right, π/2 = down
         angle = math.atan2(screen_dy, screen_dx)
-        
+
         # Normalize to [0, 2π)
         if angle < 0:
             angle += 2 * math.pi
-        
+
         # Map angle to orientation (0-7)
         # bin size = 2π/8 = π/4 = 45 degrees
         # center each bin: add π/8 before quantizing
         bin_size = 2 * math.pi / 8
         bin_index = int((angle + bin_size / 2) / bin_size) % 8
-        
+
         # Convert bin index to orientation
         # bin 0 (angle ~0): RIGHT (6)
         # bin 1 (angle ~π/4): DOWN_RIGHT (7)
@@ -137,7 +137,7 @@ class Mob:
         # bin 5 (angle ~5π/4): UP_LEFT (3)
         # bin 6 (angle ~3π/2): UP (4)
         # bin 7 (angle ~7π/4): UP_RIGHT (5)
-        
+
         bin_to_orientation = [6, 7, 0, 1, 2, 3, 4, 5]
         return bin_to_orientation[bin_index]
 
@@ -147,7 +147,7 @@ class Mob:
         The mob requests waypoints from its pathfinding_manager.
         When reaching a waypoint, it advances in the path cache.
         When reaching the target, it notifies the pathfinding_manager.
-        
+
         Updates orientation based on movement direction.
 
         Returns:
@@ -160,7 +160,7 @@ class Mob:
             if self.pathfinding_manager:
                 self.pathfinding_manager.reached_target(self.id)
             return True
-        
+
         # Check if reached main target
         dx_target = self.target_x - self.x
         dy_target = self.target_y - self.y
@@ -250,13 +250,13 @@ class Zombie(Mob):
     ):
         # Import config here to get terrain multipliers and pathfinding config
         from config import MOB_TYPE_CONFIG
-        
+
         zombie_config = MOB_TYPE_CONFIG.get("zombie", {})
         hp = zombie_config.get("hp", 100)
         speed = zombie_config.get("speed", 0.3)
         terrain_multipliers = zombie_config.get("terrain_multipliers")
         pathfinding_config = zombie_config.get("pathfinding")
-        
+
         super().__init__(
             x=x,
             y=y,

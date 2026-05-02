@@ -100,7 +100,7 @@ class GameManager:
         Updates blocked tiles from turrets, moves mobs along their paths.
         Removes mobs that have reached their target or died.
         Updates each mob's elevation from the current map tile.
-        
+
         Returns:
             Tuple of (mob_list, dead_mob_ids)
             - mob_list: list of mob dicts for WS broadcasting
@@ -112,7 +112,7 @@ class GameManager:
 
         alive_mobs = []
         dead_mob_ids = []
-        
+
         for mob in game.mobs:
             reached = mob.move_toward_target()
             if reached:
@@ -137,7 +137,7 @@ class GameManager:
 
         Validates placement: tile must be empty (no trees/buildings) and not water.
         Sets orientation based on closest mob position.
-        
+
         Optimizes pathfinding: only invalidates paths affected by new blocked tiles.
 
         Returns the created turret Turret object or None if validation fails.
@@ -207,12 +207,14 @@ class GameManager:
 
         rotations = []
         shots = []
-        
+
         for building in game.map.buildings:
             # Only update turrets
             if isinstance(building, Turret):
-                orientation_changed, shot_event = building.update_target(game.mobs, game.current_tick)
-                
+                orientation_changed, shot_event = building.update_target(
+                    game.mobs, game.current_tick
+                )
+
                 if orientation_changed is not None:
                     rotations.append(
                         {
@@ -220,7 +222,7 @@ class GameManager:
                             "orientation": orientation_changed,
                         }
                     )
-                
+
                 if shot_event is not None:
                     shots.append(shot_event)
 
