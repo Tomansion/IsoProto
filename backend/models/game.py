@@ -26,6 +26,7 @@ class Game:
         self.players: List[Player] = []
         self.nb_players = 0
         self.mobs: List[Zombie] = []
+        self.current_tick = 0  # Game tick counter for synchronization
         if seed is None:
             seed = random.randint(0, 2**31 - 1)
         self.map = Map(seed=seed)

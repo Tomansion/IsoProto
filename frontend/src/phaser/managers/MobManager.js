@@ -71,7 +71,8 @@ export class MobManager {
         mob.elevation || 0,
       );
       // Add a small offset so mobs appear above the tile surface
-      const depth = getDepthForTile(Math.floor(mob.x), Math.floor(mob.y)) + 15000;
+      const depth =
+        getDepthForTile(Math.floor(mob.x), Math.floor(mob.y)) + 15000;
 
       // Flip sprite if facing left side of isometric view
       // Orientations: 0=DOWN, 1=DOWN_LEFT, 2=LEFT, 3=UP_LEFT, 4=UP, 5=UP_RIGHT, 6=RIGHT, 7=DOWN_RIGHT
@@ -86,12 +87,30 @@ export class MobManager {
         sprite.setFlipX(flipX);
       } else {
         // Spawn new sprite
-        const sprite = this.scene.add.sprite(screenX, screenY, ZOMBIE_ASSET.key);
+        const sprite = this.scene.add.sprite(
+          screenX,
+          screenY,
+          ZOMBIE_ASSET.key,
+        );
         sprite.setOrigin(0.5, 1.25); // Anchor near the feet for better isometric look
         sprite.setDepth(depth);
         sprite.setFlipX(flipX);
         sprite.play("zombie-walk");
         this.mobSprites[mob.id] = sprite;
+      }
+    }
+  }
+
+  /**
+   * Remove dead mobs from the scene with a death animation.
+   * @param {Array} mobIds - Array of mob IDs to remove
+   */
+  removeMobs(mobIds) {
+    for (const mobId of mobIds) {
+      const sprite = this.mobSprites[mobId];
+      if (sprite) {
+        sprite.destroy();
+        delete this.mobSprites[mobId];
       }
     }
   }

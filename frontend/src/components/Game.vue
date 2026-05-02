@@ -195,8 +195,15 @@ export default {
           this.mobs = message.data || [];
           phaserGameManager.updateMobs(this.mobs);
           break;
+        case "mob_died":
+          // Remove dead mobs from the scene
+          phaserGameManager.removeMobs(message.data || []);
+          break;
         case "turret_rotation":
           phaserGameManager.updateTurretRotations(message.data || []);
+          break;
+        case "turret_shot":
+          phaserGameManager.playShotAnimations(message.data || []);
           break;
         case "mob_spawned":
           // Add newly spawned mobs to our tracking list

@@ -151,9 +151,16 @@ class Mob:
         Updates orientation based on movement direction.
 
         Returns:
-            True if the mob has reached the target (should be removed),
+            True if the mob has reached the target or died (should be removed),
             False otherwise.
         """
+        # Check if mob is dead
+        if self.hp <= 0:
+            # Notify pathfinding manager that we're being removed
+            if self.pathfinding_manager:
+                self.pathfinding_manager.reached_target(self.id)
+            return True
+        
         # Check if reached main target
         dx_target = self.target_x - self.x
         dy_target = self.target_y - self.y
@@ -245,14 +252,16 @@ class Zombie(Mob):
         from config import MOB_TYPE_CONFIG
         
         zombie_config = MOB_TYPE_CONFIG.get("zombie", {})
+        hp = zombie_config.get("hp", 100)
+        speed = zombie_config.get("speed", 0.3)
         terrain_multipliers = zombie_config.get("terrain_multipliers")
         pathfinding_config = zombie_config.get("pathfinding")
         
         super().__init__(
             x=x,
             y=y,
-            hp=100,
-            speed=0.3,
+            hp=hp,
+            speed=speed,
             target_x=target_x,
             target_y=target_y,
             mob_type="zombie",

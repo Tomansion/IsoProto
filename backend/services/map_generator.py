@@ -63,8 +63,9 @@ class MapGenerator:
                 ) ** 0.5
 
                 if distance_from_center <= BASE_RADIUS:
-                    # Clear area for base - no trees
+                    # Clear area for base - no trees - elevation > 0
                     tile = TILE_EMPTY
+                    elevation_value = max(elevation_value, 2)  # Ensure some elevation for base
                 else:
                     if normalized_elevation > PERLIN_TREE_THRESHOLD:
                         tile = TILE_TREE

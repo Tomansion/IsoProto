@@ -54,6 +54,9 @@ class GameConnectionManager:
                 if not game:
                     break
 
+                # Increment game tick
+                game_manager.tick_game(game_id)
+
                 # Spawn new mobs from waves
                 spawned_mobs = game_manager.spawn_mobs(game_id)
                 if spawned_mobs:
@@ -63,18 +66,28 @@ class GameConnectionManager:
                     )
 
                 # Update mobs
-                mob_dicts = game_manager.tick_mobs(game_id)
+                mob_dicts, dead_mob_ids = game_manager.tick_mobs(game_id)
                 await self.broadcast_game(
                     game_id,
                     {"type": "mob_update", "data": mob_dicts},
                 )
+                if dead_mob_ids:
+                    await self.broadcast_game(
+                        game_id,
+                        {"type": "mob_died", "data": dead_mob_ids},
+                    )
 
-                # Update turrets and broadcast rotation changes
-                turret_rotations = game_manager.tick_turrets(game_id)
+                # Update turrets and broadcast rotation changes and shots
+                turret_rotations, turret_shots = game_manager.tick_turrets(game_id)
                 if turret_rotations:
                     await self.broadcast_game(
                         game_id,
                         {"type": "turret_rotation", "data": turret_rotations},
+                    )
+                if turret_shots:
+                    await self.broadcast_game(
+                        game_id,
+                        {"type": "turret_shot", "data": turret_shots},
                     )
         except asyncio.CancelledError:
             pass  # Graceful shutdown

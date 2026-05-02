@@ -16,8 +16,11 @@ class Turret(Building):
         id: str = None,
         player_id: str = None,
         orientation: int = 0,
+        turret_type: str = "basic",
         range: float = 20.0,
         rotation_speed: float = 0.5,  # Rotations per tick (0-1 = partial, >1 = multiple per tick)
+        damage: int = 30,
+        fire_cooldown: int = 10,
     ):
         super().__init__(
             x=x,
@@ -28,25 +31,39 @@ class Turret(Building):
             player_id=player_id,
             orientation=orientation,
         )
+        # Load config from TURRET_TYPE_CONFIG if available
+        from config import TURRET_TYPE_CONFIG
+        turret_config = TURRET_TYPE_CONFIG.get(turret_type, {})
+        
+        self.turret_type = turret_type
         self.target_mob_id: Optional[str] = None
-        self.range = range  # Maximum targeting distance
-        self.rotation_speed = rotation_speed  # Speed of rotation in orientations per tick
+        self.range = range or turret_config.get("range", 20.0)  # Maximum targeting distance
+        self.rotation_speed = rotation_speed or turret_config.get("rotation_speed", 0.5)
+        self.damage = damage or turret_config.get("damage", 30)  # Damage per shot
+        self.fire_cooldown = fire_cooldown or turret_config.get("fire_cooldown", 10)  # Ticks between shots
         self.current_angle = orientation * (2 * math.pi / 8)  # Current angle in radians
         self.idle_timer = 0  # Counter for idle rotation
         self.idle_duration = 60  # Ticks before choosing new idle direction
         self.idle_target_angle = None  # Target angle when idle
+        self.last_shot_tick = 0  # Track when last shot was fired
 
-    def update_target(self, mobs: List) -> Optional[int]:
-        """Update turret to target the closest mob within range and rotate toward it.
+    def update_target(self, mobs: List, current_tick: int = 0) -> tuple:
+        """Update turret to target the closest mob within range, rotate toward it, and fire if aimed.
 
-        Returns the new orientation (0-7) if orientation changed after smooth rotation,
-        or None if no change.
+        Args:
+            mobs: List of mobs to target
+            current_tick: Current game tick (for firing cooldown)
+
+        Returns:
+            Tuple of (new_orientation or None, shot_event or None)
+            - new_orientation: (0-7) if orientation changed, or None
+            - shot_event: Dict with shot data if fired, or None
         """
         if not mobs:
             self.target_mob_id = None
             # Start idle rotation if no target
             self._update_idle_rotation()
-            return self._update_orientation_from_angle()
+            return (self._update_orientation_from_angle(), None)
 
         # Find closest mob within range
         closest_mob = None
@@ -69,7 +86,7 @@ class Turret(Building):
             self.target_mob_id = None
             # Start idle rotation
             self._update_idle_rotation()
-            return self._update_orientation_from_angle()
+            return (self._update_orientation_from_angle(), None)
 
         self.target_mob_id = closest_mob.id
         self.idle_timer = 0  # Reset idle timer when we have a target
@@ -81,7 +98,67 @@ class Turret(Building):
         target_angle = math.atan2(dy, dx)  # In radians
 
         # Smooth rotation toward target angle
-        return self._rotate_toward_angle(target_angle)
+        orientation_changed = self._rotate_toward_angle(target_angle)
+        
+        # Check if aimed and fire if off cooldown
+        shot_event = None
+        if self._is_aimed_at_target(target_angle) and current_tick - self.last_shot_tick >= self.fire_cooldown:
+            shot_event = self._fire(closest_mob, current_tick)
+        
+        return (orientation_changed, shot_event)
+
+    def _is_aimed_at_target(self, target_angle: float) -> bool:
+        """Check if current angle is within tolerance of target angle.
+        
+        Tolerance is 22.5 degrees (π/8 radians) = one orientation bin.
+        This means the turret fires when rotated to face the target orientation.
+        """
+        # Normalize angles to [0, 2π)
+        while target_angle < 0:
+            target_angle += 2 * math.pi
+        while target_angle >= 2 * math.pi:
+            target_angle -= 2 * math.pi
+        
+        current = self.current_angle
+        while current < 0:
+            current += 2 * math.pi
+        while current >= 2 * math.pi:
+            current -= 2 * math.pi
+        
+        # Calculate difference
+        diff = target_angle - current
+        while diff > math.pi:
+            diff -= 2 * math.pi
+        while diff < -math.pi:
+            diff += 2 * math.pi
+        
+        # Tolerance is one orientation bin (π/8 radians)
+        aim_tolerance = math.pi / 8
+        return abs(diff) <= aim_tolerance
+
+    def _fire(self, target_mob, current_tick: int) -> dict:
+        """Fire at target mob, dealing damage.
+        
+        Args:
+            target_mob: Mob to shoot
+            current_tick: Current game tick
+            
+        Returns:
+            Shot event dict {turret_id, mob_id, turret_x, turret_y, orientation, damage}
+        """
+        self.last_shot_tick = current_tick
+        
+        # Deal damage to mob
+        target_mob.hp -= self.damage
+        
+        return {
+            "turret_id": self.id,
+            "turret_x": self.x,
+            "turret_y": self.y,
+            "orientation": self.orientation,
+            "mob_id": target_mob.id,
+            "damage": self.damage,
+        }
 
     def _update_idle_rotation(self) -> None:
         """Update idle rotation timer and pick random direction when needed."""

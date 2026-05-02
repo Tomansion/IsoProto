@@ -94,30 +94,40 @@ class GameManager:
         self.game_ws_connections[game_id].append(ws)
 
     # Mob management
-    def tick_mobs(self, game_id: str) -> list:
+    def tick_mobs(self, game_id: str) -> tuple:
         """Move all mobs one tick toward their target.
 
         Updates blocked tiles from turrets, moves mobs along their paths.
-        Removes mobs that have reached their target.
+        Removes mobs that have reached their target or died.
         Updates each mob's elevation from the current map tile.
-        Returns list of mob dicts for WS broadcasting.
+        
+        Returns:
+            Tuple of (mob_list, dead_mob_ids)
+            - mob_list: list of mob dicts for WS broadcasting
+            - dead_mob_ids: list of IDs of mobs that died this tick (for frontend feedback)
         """
         game = self.games.get(game_id)
         if not game:
-            return []
+            return ([], [])
 
         alive_mobs = []
+        dead_mob_ids = []
+        
         for mob in game.mobs:
             reached = mob.move_toward_target()
-            if not reached:
+            if reached:
+                # Mob removed (reached target or died)
+                if mob.hp <= 0:
+                    dead_mob_ids.append(mob.id)
+            else:
                 # Update elevation based on current map tile
-                tx = max(0, min(game.map.width - 1, int(mob.x)))
-                ty = max(0, min(game.map.height - 1, int(mob.y)))
+                tx = max(0, min(game.map.width - 1, round(mob.x)))
+                ty = max(0, min(game.map.height - 1, round(mob.y)))
                 mob.elevation = game.map.elevation[ty][tx]
                 alive_mobs.append(mob)
 
         game.mobs = alive_mobs
-        return [m.to_dict() for m in game.mobs]
+        return ([m.to_dict() for m in game.mobs], dead_mob_ids)
 
     # Turret management
     def add_turret_to_game(
@@ -166,8 +176,8 @@ class GameManager:
             orientation=orientation,
         )
 
-        # Set correct orientation based on closest mob
-        turret.update_target(game.mobs)
+        # Set correct orientation based on closest mob (no firing at initialization)
+        turret.update_target(game.mobs, game.current_tick)
 
         map_obj.buildings.append(turret)
 
@@ -184,30 +194,43 @@ class GameManager:
 
         return turret
 
-    def tick_turrets(self, game_id: str) -> list:
-        """Update all turrets to track closest mobs.
+    def tick_turrets(self, game_id: str) -> tuple:
+        """Update all turrets to track closest mobs and fire when ready.
 
-        Returns list of turret rotation updates [{id, orientation}, ...]
-        for only turrets that changed orientation.
+        Returns tuple of (rotations, shots) where:
+        - rotations: list of turret rotation updates [{id, orientation}, ...]
+        - shots: list of shot events [{turret_id, turret_x, turret_y, orientation, mob_id, damage}, ...]
         """
         game = self.games.get(game_id)
         if not game:
-            return []
+            return ([], [])
 
         rotations = []
+        shots = []
+        
         for building in game.map.buildings:
             # Only update turrets
             if isinstance(building, Turret):
-                new_orientation = building.update_target(game.mobs)
-                if new_orientation is not None:
+                orientation_changed, shot_event = building.update_target(game.mobs, game.current_tick)
+                
+                if orientation_changed is not None:
                     rotations.append(
                         {
                             "id": building.id,
-                            "orientation": new_orientation,
+                            "orientation": orientation_changed,
                         }
                     )
+                
+                if shot_event is not None:
+                    shots.append(shot_event)
 
-        return rotations
+        return (rotations, shots)
+
+    def tick_game(self, game_id: str) -> None:
+        """Increment game tick counter."""
+        game = self.games.get(game_id)
+        if game:
+            game.current_tick += 1
 
     def spawn_mobs(self, game_id: str) -> list:
         """Process mob spawning based on spawner waves.

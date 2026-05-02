@@ -99,6 +99,30 @@ export class PhaserGameManager {
   }
 
   /**
+   * Play turret shot animations
+   * @param {Array} shots - Array of shot data {turret_id, turret_x, turret_y, orientation, mob_id, damage}
+   */
+  playShotAnimations(shots) {
+    if (!this.mapScene) {
+      setTimeout(() => this.playShotAnimations(shots), 100);
+      return;
+    }
+    this.mapScene.playShotAnimations(shots);
+  }
+
+  /**
+   * Remove mobs from the scene (when they die)
+   * @param {Array} mobIds - Array of mob IDs to remove
+   */
+  removeMobs(mobIds) {
+    if (!this.mapScene) {
+      setTimeout(() => this.removeMobs(mobIds), 100);
+      return;
+    }
+    this.mapScene.removeMobs(mobIds);
+  }
+
+  /**
    * Destroy the Phaser game instance
    * Clean up all resources
    */

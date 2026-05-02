@@ -201,6 +201,30 @@ export class MapScene extends Phaser.Scene {
   }
 
   /**
+   * Play shot animations for turrets.
+   * @param {Array} shots - Array of shot data {turret_id, turret_x, turret_y, orientation, mob_id, damage}
+   */
+  playShotAnimations(shots) {
+    if (!this.buildingManager) {
+      console.warn("BuildingManager not ready");
+      return;
+    }
+    this.buildingManager.playShotAnimations(shots);
+  }
+
+  /**
+   * Remove dead mobs from the scene.
+   * @param {Array} mobIds - Array of mob IDs to remove
+   */
+  removeMobs(mobIds) {
+    if (!this.mobManager) {
+      console.warn("MobManager not ready");
+      return;
+    }
+    this.mobManager.removeMobs(mobIds);
+  }
+
+  /**
    * Render a single turret on the map
    * Called when a turret is placed
    * @param {object} turretData - Turret data {id, x, y, building_type, orientation, player_id}

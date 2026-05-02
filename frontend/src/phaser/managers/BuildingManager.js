@@ -11,6 +11,7 @@ import {
   BUILDING_SHEET_ASSET,
   TURRET_SHEET_ASSET,
   TURRET_FRAMES,
+  TURRET_SHOT_FRAMES,
 } from "../../config/mapConfig.js";
 
 export class BuildingManager {
@@ -125,7 +126,6 @@ export class BuildingManager {
     );
     baseSprite.setDepth(baseDepth);
     baseSprite.setOrigin(0.5, 0.5);
-    baseSprite.setScale(96 / TURRET_SHEET_ASSET.frameWidth); // Scale to 96px
 
     // Create turret head sprite (rotates based on orientation)
     const headFrame = TURRET_FRAMES[orientation] || TURRET_FRAMES[0];
@@ -137,8 +137,6 @@ export class BuildingManager {
     );
     headSprite.setDepth(headDepth);
     headSprite.setOrigin(0.5, 0.5);
-    headSprite.setScale(96 / TURRET_SHEET_ASSET.frameWidth); // Scale to 96px
-
     // Link sprites together
     baseSprite.turretId = id;
     baseSprite.headSprite = headSprite;
@@ -197,6 +195,41 @@ export class BuildingManager {
           TURRET_FRAMES[rotation.orientation] || TURRET_FRAMES[0];
         building.setFrame(newFrame);
       }
+    }
+  }
+
+  /**
+   * Play shot animations for turrets.
+   * @param {Array} shots - Array of shot data {turret_id, turret_x, turret_y, orientation, mob_id, damage}
+   */
+  playShotAnimations(shots) {
+    if (!shots || shots.length === 0) return;
+
+    for (const shot of shots) {
+      // Find turret base sprite by turret_id
+      const turretBase = this.buildings.find(
+        (b) => b.turretId === shot.turret_id && !b.baseSprite,
+      );
+      if (!turretBase) continue;
+
+      // Get the shot frame for this orientation
+      const shotFrame = TURRET_SHOT_FRAMES[shot.orientation];
+      if (shotFrame === undefined) throw new Error(`No shot frame defined for orientation ${shot.orientation}`);
+
+      // Create a temporary shot effect sprite at the turret location
+      const shotSprite = this.scene.add.sprite(
+        turretBase.x,
+        turretBase.y,
+        TURRET_SHEET_ASSET.key,
+        shotFrame,
+      );
+      shotSprite.setDepth(turretBase.depth + 1);
+      shotSprite.setOrigin(0.5, 0.5);
+
+      // Hold the frame for 200ms then destroy
+      this.scene.time.delayedCall(200, () => {
+        shotSprite.destroy();
+      });
     }
   }
 }

@@ -58,8 +58,8 @@ export const BUILDING_SHEET_ASSET = {
 export const TURRET_SHEET_ASSET = {
   key: "turret-sheet",
   url: "/images/turrets-sheet.png",
-  frameWidth: 96,
-  frameHeight: 96,
+  frameWidth: 32*5,
+  frameHeight: 32*5,
 };
 
 
@@ -74,6 +74,19 @@ export const TURRET_FRAMES = {
   5: 5, // UP_RIGHT
   6: 6, // RIGHT
   7: 7, // DOWN_RIGHT
+};
+
+// Turret shot fire effect frames: orientation -> shot sprite frame (second row)
+// Each orientation has a matching shot effect frame
+export const TURRET_SHOT_FRAMES = {
+  0: 9,  // DOWN
+  1: 10, // DOWN_LEFT
+  2: 11, // LEFT
+  3: 12, // UP_LEFT
+  4: 13, // UP
+  5: 14, // UP_RIGHT
+  6: 15, // RIGHT
+  7: 16, // DOWN_RIGHT
 };
 
 // Zombie (mob) spritesheet asset — 6 frames, left-to-right walk animation
@@ -97,6 +110,7 @@ export default {
   BUILDING_SHEET_ASSET,
   TURRET_SHEET_ASSET,
   TURRET_FRAMES,
+  TURRET_SHOT_FRAMES,
   ZOMBIE_ASSET,
   ZOMBIE_ANIM_FRAMERATE,
 };
