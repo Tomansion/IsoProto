@@ -6,7 +6,7 @@ from models.map import Map
 from models.mob import Zombie
 from services.mob_spawner import MobSpawner
 from services.pathfinding_manager import PathfindingManager
-from config import MOB_SPAWN_CONFIG, PATHFINDING_CONFIG
+from config import MOB_SPAWN_CONFIG
 from datetime import datetime
 
 
@@ -34,7 +34,7 @@ class Game:
         self.mob_spawner = MobSpawner(self.map, MOB_SPAWN_CONFIG)
         
         # Initialize pathfinding manager for weighted flow-field pathfinding
-        self.pathfinding = PathfindingManager(self.map, PATHFINDING_CONFIG)
+        self.pathfinding = PathfindingManager(self.map)
 
     def to_dict(self) -> Dict:
         """Convert the Game object to a dictionary for storage."""

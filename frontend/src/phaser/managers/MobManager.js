@@ -49,7 +49,7 @@ export class MobManager {
    * Creates new sprites for new mobs, updates positions for existing ones,
    * and removes sprites for mobs that are no longer present.
    *
-   * @param {Array} mobs - Array of mob data objects {id, x, y, hp, mob_type, elevation}
+   * @param {Array} mobs - Array of mob data objects {id, x, y, hp, mob_type, elevation, orientation}
    */
   updateMobs(mobs) {
     // Track which mob IDs are still active
@@ -73,7 +73,10 @@ export class MobManager {
       // Add a small offset so mobs appear above the tile surface
       const depth = getDepthForTile(Math.floor(mob.x), Math.floor(mob.y)) + 15000;
 
-      const flipX = mob.direction_x < 0;
+      // Flip sprite if facing left side of isometric view
+      // Orientations: 0=DOWN, 1=DOWN_LEFT, 2=LEFT, 3=UP_LEFT, 4=UP, 5=UP_RIGHT, 6=RIGHT, 7=DOWN_RIGHT
+      // Flip when facing LEFT side (1, 2, 3)
+      const flipX = mob.orientation >= 1 && mob.orientation <= 3;
 
       if (this.mobSprites[mob.id]) {
         // Move existing sprite

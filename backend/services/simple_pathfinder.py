@@ -12,8 +12,7 @@ from random import random
 class SimplePathfinder:
     """A* pathfinding algorithm - direct path computation."""
 
-    def __init__(self, pathfinding_config: Dict):
-        self.config = pathfinding_config
+    def __init__(self):
         # Cache: mob_id -> path (list of tiles)
         self.path_cache: Dict[str, List[Tuple[int, int]]] = {}
         # Track current waypoint index per mob
@@ -33,17 +32,49 @@ class SimplePathfinder:
 
         return True
 
-    def get_cost(self, x: int, y: int, map_obj) -> float:
-        """Get cost to enter a tile (1.0 base, +0.5 for trees)."""
-        cost = 1.0 + random() * 2
+    def get_cost(self, x: int, y: int, map_obj, pathfinding_config: dict = None) -> float:
+        """Get cost to enter a tile based on mob-specific configuration.
+        
+        Args:
+            x, y: Tile coordinates
+            map_obj: Game map
+            pathfinding_config: Mob-specific pathfinding config with:
+                - base_cost: Base cost (default 1.0)
+                - tree_cost: Additional cost for trees (default 0.5)
+                - water_cost: Additional cost for water (default 10.0)
+                - randomness: Random variation factor (default 0.0)
+        
+        Returns:
+            Cost to enter the tile
+        """
+        if pathfinding_config is None:
+            pathfinding_config = {
+                "base_cost": 1.0,
+                "tree_cost": 0.5,
+                "water_cost": 10.0,
+                "randomness": 0.0,
+            }
+        
+        base_cost = pathfinding_config.get("base_cost", 1.0)
+        tree_cost = pathfinding_config.get("tree_cost", 0.5)
+        water_cost = pathfinding_config.get("water_cost", 10.0)
+        randomness = pathfinding_config.get("randomness", 0.0)
+        
+        cost = base_cost
+        
+        # Add randomness if configured
+        if randomness > 0:
+            cost += (random() - 0.5) * 2 * randomness * base_cost
 
-        # Trees add slight cost but are passable
+        # Trees add cost but are passable
         if map_obj.tiles[y][x] == 1:  # TILE_TREE
-            cost += 0.5 + random() * 2
+            cost += tree_cost
+            if randomness > 0:
+                cost += (random() - 0.5) * 2 * randomness * tree_cost
 
         # Water (elevation <= 0) is hard to cross
         if map_obj.elevation[y][x] <= 0:
-            cost += 10.0 
+            cost += water_cost
 
         return cost
 
@@ -59,6 +90,7 @@ class SimplePathfinder:
         goal_y: int,
         map_obj,
         blocked_tiles: Set[Tuple[int, int]],
+        pathfinding_config: dict = None,
     ) -> List[Tuple[int, int]]:
         """Find path from start to goal using A*.
 
@@ -67,11 +99,11 @@ class SimplePathfinder:
             goal_x, goal_y: Goal position
             map_obj: Game map
             blocked_tiles: Set of impassable tiles (turrets)
+            pathfinding_config: Mob-specific pathfinding configuration
 
         Returns:
             List of (x, y) tiles from start to goal (excluding start)
         """
-        print(f"\nFinding path from ({start_x}, {start_y}) to ({goal_x}, {goal_y})")
         # If start == goal, no path needed
         if start_x == goal_x and start_y == goal_y:
             return []
@@ -94,7 +126,7 @@ class SimplePathfinder:
         # came_from: for path reconstruction
         came_from: Dict[Tuple[int, int], Tuple[int, int]] = {}
 
-        MAX_ITERATIONS = 4000
+        MAX_ITERATIONS = 8000
         iterations = 0
 
         while open_set and iterations < MAX_ITERATIONS:
@@ -134,8 +166,8 @@ class SimplePathfinder:
                     if not self.is_passable(nx, ny, map_obj, blocked_tiles):
                         continue
 
-                    # Calculate cost
-                    move_cost = self.get_cost(nx, ny, map_obj)
+                    # Calculate cost using mob-specific config
+                    move_cost = self.get_cost(nx, ny, map_obj, pathfinding_config)
 
                     # Diagonal moves cost slightly more
                     if dx != 0 and dy != 0:
@@ -152,7 +184,7 @@ class SimplePathfinder:
                         heapq.heappush(open_set, (f_score, counter, nx, ny))
 
         # No path found
-        print("Not found")
+        print("Path Not found")
         return []
 
     def compute_path(
@@ -164,6 +196,8 @@ class SimplePathfinder:
         goal_y: int,
         map_obj,
         blocked_tiles: Set[Tuple[int, int]],
+        mob_type: str = "zombie",
+        pathfinding_config: dict = None,
     ) -> List[Tuple[int, int]]:
         """Compute or retrieve cached path for a mob.
 
@@ -173,6 +207,8 @@ class SimplePathfinder:
             goal_x, goal_y: Goal tile coordinates
             map_obj: Game map
             blocked_tiles: Set of blocked tiles
+            mob_type: Type of mob (for determining cost function)
+            pathfinding_config: Mob-specific pathfinding configuration
 
         Returns:
             Path from current position to goal
@@ -191,7 +227,7 @@ class SimplePathfinder:
                 return cached
 
         # Compute new path
-        path = self.find_path(start_x, start_y, goal_x, goal_y, map_obj, blocked_tiles)
+        path = self.find_path(start_x, start_y, goal_x, goal_y, map_obj, blocked_tiles, pathfinding_config)
         self.path_cache[mob_id] = path
         return path
 
@@ -204,6 +240,8 @@ class SimplePathfinder:
         goal_y: int,
         map_obj,
         blocked_tiles: Set[Tuple[int, int]],
+        mob_type: str = "zombie",
+        pathfinding_config: dict = None,
     ) -> Tuple[float, float]:
         """Get the next waypoint for a mob.
 
@@ -216,13 +254,15 @@ class SimplePathfinder:
             goal_x, goal_y: Goal tile coordinates
             map_obj: Game map
             blocked_tiles: Set of blocked tiles
+            mob_type: Type of mob (for determining cost function)
+            pathfinding_config: Mob-specific pathfinding configuration
 
         Returns:
             Next waypoint as (x, y) float coordinates
         """
         # Get or compute path
         path = self.compute_path(
-            mob_id, mob_x, mob_y, goal_x, goal_y, map_obj, blocked_tiles
+            mob_id, mob_x, mob_y, goal_x, goal_y, map_obj, blocked_tiles, mob_type, pathfinding_config
         )
 
         # Initialize path index if not exists

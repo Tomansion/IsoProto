@@ -1,7 +1,7 @@
 """Configuration constants for the game."""
 
 # Map generation
-MAP_SIZE = 100
+MAP_SIZE = 110
 MAP_CENTER = MAP_SIZE // 2
 BASE_RADIUS = 5  # Clear area around the base
 
@@ -37,15 +37,21 @@ MOB_SPAWN_CONFIG = {
     "total_waves": 20,             # Total number of waves to spawn
 }
 
-# Pathfinding and movement configuration
-PATHFINDING_CONFIG = {
-    "terrain_costs": {
-        "water": 20.0,            # Water is strongly avoided
-        "tree": 2.0,               # Trees add slight cost but passable
-        "min_cost": 0.2,           # Minimum movement cost to prevent negative values
-    },
-    "elevation_costs": {
-        "uphill_multiplier": 2.0,  # Cost multiplier for going uphill
-        "downhill_multiplier": 0.5,  # Cost multiplier for going downhill (preferred)
+# Mob type configurations
+MOB_TYPE_CONFIG = {
+    "zombie": {
+        "speed": 0.3,
+        "hp": 100,
+        "terrain_multipliers": {
+            "tree": 0.5,      # slower in forests
+            "water": 0.2,     # slower in water
+            "default": 1.0,   # Normal speed on other tiles
+        },
+        "pathfinding": {
+            "base_cost": 1.0,  # Base cost to move to a tile
+            "tree_cost": 0.5,  # Additional cost for trees (added to base)
+            "water_cost": 10.0,  # Additional cost for water
+            "randomness": 0.0,  # Random variation (0.0 = no randomness, 2.0 = ±100%)
+        },
     },
 }

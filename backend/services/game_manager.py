@@ -127,6 +127,8 @@ class GameManager:
 
         Validates placement: tile must be empty (no trees/buildings) and not water.
         Sets orientation based on closest mob position.
+        
+        Optimizes pathfinding: only invalidates paths affected by new blocked tiles.
 
         Returns the created turret Turret object or None if validation fails.
         """
@@ -169,10 +171,16 @@ class GameManager:
 
         map_obj.buildings.append(turret)
 
-        # Invalidate all cached paths since terrain changed
-        game.pathfinding.clear_cache()
-        # Update blocked tiles from turrets
+        # Update blocked tiles and track newly blocked ones
         game.pathfinding.update_blocked_tiles(game.map.buildings)
+
+        # Only invalidate paths affected by newly blocked tiles
+        for mob in game.mobs:
+            cached_path = game.pathfinding.pathfinder.path_cache.get(mob.id, [])
+            if cached_path:
+                game.pathfinding.invalidate_affected_paths(
+                    mob.x, mob.y, mob.id, cached_path
+                )
 
         return turret
 

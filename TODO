@@ -1,12 +1,27 @@
 ✔ Fix tile click detection due to elevation @done(26-04-23 22:50)
-☐ Fix path not found whan on turrets 
+✔ Fix path not found whan on turrets @done(26-05-02 18:35)
+✔ Slow in forest & water @done(26-05-02 19:31)
+✔ Fix mob facing target and not next waypoint @done(26-05-02 19:31)
+✔ Mob pathfinding config @done(26-05-02 19:31)
+✔ Optimize path refresh so that it clears only if blocked @done(26-05-02 19:31)
 ☐ Add random turret movement when no target
-☐ change water to a single sprite (circular ?)
-☐ Use pathfinding config
-☐ Fix mob facing target and not next waypoint
-☐ Slow in forest & water
-☐ Fix building elevation by placing structure blocks bellow them
-☐ Fixe the overall deph issues
-☐ Place players cursor
-☐ Make an island
-☐ Optimize path refresh so that it clears only if blocked
+
+Graphisms:
+    ☐ Reduce zombies size
+    ☐ Make 8 turret shot animation
+    ☐ Fix building elevation by placing structure blocks bellow them
+
+Optimization:
+    ☐ change water to a single sprite (circular ?)
+
+Bugs fix:
+    ☐ Fix issue game closing when 1 person leaves
+    ☐ Fixe the overall deph issues
+
+Map Generation:
+    ☐ Make an island
+    
+Features:
+    ☐ Place players cursor
+    ☐ Display available turret placement
+    ☐ Display turret range 
