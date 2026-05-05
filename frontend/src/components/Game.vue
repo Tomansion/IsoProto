@@ -1,16 +1,7 @@
 <template>
   <div class="game-container">
     <div class="terminal-window">
-      <div class="terminal-header">game@isoproto:{{ gameId }}</div>
       <div class="terminal-main">
-        <div class="game-info-bar">
-          <div>{{ game?.name || "loading..." }}</div>
-          <div class="info-stats">
-            {{ game?.nb_players || 0 }} players
-            <button @click="leaveGame" class="leave-btn">[Q] quit</button>
-          </div>
-        </div>
-
         <div class="game-content">
           <div class="game-board">
             <div v-if="loading" class="status">connecting...</div>
@@ -22,17 +13,25 @@
               id="game-canvas-container"
               class="phaser-container"
             ></div>
-          </div>
 
-          <div class="players-panel">
-            <div class="panel-header">PLAYERS</div>
-            <div class="players-list">
-              <div
-                v-for="player in game?.players"
-                :key="player.id"
-                class="player-item"
-              >
-                > {{ player.username }}
+            <!-- Game Info Overlay -->
+            <div class="game-info-overlay">
+              <div class="game-name">{{ game?.name || "loading..." }}</div>
+              <div class="game-controls">
+                <button @click="leaveGame" class="leave-btn">[Q] quit</button>
+              </div>
+            </div>
+
+            <!-- Players Panel Overlay -->
+            <div class="players-overlay">
+              <div class="players-list">
+                <div
+                  v-for="player in game?.players"
+                  :key="player.id"
+                  class="player-item"
+                >
+                  > {{ player.username }}
+                </div>
               </div>
             </div>
           </div>
@@ -278,18 +277,8 @@ export default {
   display: flex;
   flex-direction: column;
   background-color: #000000;
-  border: 1px solid #00ff00;
   font-family: "Courier New", monospace;
   color: #00ff00;
-}
-
-.terminal-header {
-  background-color: #001a00;
-  border-bottom: 1px solid #00ff00;
-  padding: 8px 12px;
-  font-size: 12px;
-  color: #00aa00;
-  flex-shrink: 0;
 }
 
 .terminal-main {
@@ -298,38 +287,6 @@ export default {
   flex: 1;
   overflow: hidden;
   min-height: 0;
-}
-
-.game-info-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid #00aa00;
-  font-size: 13px;
-  background-color: #001a00;
-  flex-shrink: 0;
-}
-
-.info-stats {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 12px;
-}
-
-.leave-btn {
-  background-color: transparent;
-  border: none;
-  color: #ff0000;
-  cursor: pointer;
-  font-family: "Courier New", monospace;
-  font-size: 12px;
-  padding: 0;
-}
-
-.leave-btn:hover {
-  background-color: transparent;
 }
 
 .game-content {
@@ -342,7 +299,6 @@ export default {
 .game-board {
   flex: 1;
   background-color: #000000;
-  border-right: 1px solid #00aa00;
   display: block;
   overflow: hidden;
   position: relative;
@@ -381,44 +337,99 @@ export default {
   background-color: rgba(0, 0, 0, 0.8);
   padding: 10px 20px;
   border: 1px solid #00aa00;
+  z-index: 10;
 }
 
 .error-msg {
   color: #ff0000;
 }
 
-.players-panel {
-  width: 200px;
-  background-color: #000000;
-  border-left: 1px solid #00aa00;
+/* Game Info Overlay */
+.game-info-overlay {
+  margin: 25px;
+  border-radius: 3px;
+  position: absolute;
+  top: 0;
+  left: 0;
   display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  flex-shrink: 0;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px;
+  background-color: rgba(0, 26, 0, 1);
+  border-bottom: 1px solid #00aa00;
+  font-size: 13px;
+  z-index: 20;
+  gap: 12px;
+  pointer-events: none;
 }
 
-.panel-header {
-  padding: 8px 12px;
-  border-bottom: 1px solid #00aa00;
-  background-color: #001a00;
-  font-size: 12px;
+.game-name {
   color: #00ff00;
-  flex-shrink: 0;
+  font-weight: bold;
+}
+
+.game-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  pointer-events: all;
+}
+
+.player-count {
+  color: #00ff00;
+}
+
+.leave-btn {
+  background-color: transparent;
+  border: none;
+  color: #ff0000;
+  cursor: pointer;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.leave-btn:hover {
+  background-color: transparent;
+  color: #ff6666;
+}
+
+/* Players Panel Overlay */
+.players-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 280px;
+  max-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+  overflow: hidden;
 }
 
 .players-list {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: 12px;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .player-item {
   font-size: 12px;
-  padding: 4px 0;
+  padding: 6px 12px;
   color: #00ff00;
+  background-color: #000000;
+  border-radius: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: default;
 }
 </style>
