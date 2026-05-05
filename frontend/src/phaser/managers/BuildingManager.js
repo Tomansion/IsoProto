@@ -13,6 +13,7 @@ import {
   TURRET_FRAMES,
   TURRET_SHOT_FRAMES,
   EXPLOSION_ASSET,
+  SKYLIGHT_ASSET,
 } from "../../config/mapConfig.js";
 
 export class BuildingManager {
@@ -20,6 +21,7 @@ export class BuildingManager {
     this.scene = scene;
     this.buildings = [];
     this.turrets = []; // Track turrets separately (each is {baseSprite, headSprite})
+    this.pendingTurretEffects = new Map();
   }
 
   /**
@@ -46,6 +48,10 @@ export class BuildingManager {
           frameHeight: TURRET_SHEET_ASSET.frameHeight,
         },
       );
+    }
+
+    if (!this.scene.textures.exists(SKYLIGHT_ASSET.key)) {
+      this.scene.load.image(SKYLIGHT_ASSET.key, SKYLIGHT_ASSET.url);
     }
   }
 
@@ -112,6 +118,8 @@ export class BuildingManager {
     const { x, y, id, orientation } = turret;
     const elevation = mapData.elevation[y][x];
 
+    this.removePendingTurret(id);
+
     // Convert to isometric coordinates
     // Turrets are 96x96 px (3x3 tiles), offset them to sit on the ground properly
     const iso = cartesianToIsometric(x - 2, y - 2, elevation);
@@ -150,6 +158,62 @@ export class BuildingManager {
   }
 
   /**
+   * Render the temporary beam shown while a turret is building.
+   * @param {object} pendingTurret - Pending turret data {id, x, y, elevation}
+   */
+  renderPendingTurret(pendingTurret) {
+    if (!pendingTurret || this.pendingTurretEffects.has(pendingTurret.id)) {
+      return;
+    }
+
+    const { screenX, screenY } = cartesianToIsometric(
+      pendingTurret.x,
+      pendingTurret.y,
+      pendingTurret.elevation || 0,
+    );
+    const depth =
+      getDepthForTile(pendingTurret.x, pendingTurret.y) + 25000;
+
+    const beamSprite = this.scene.add.image(
+      screenX,
+      screenY,
+      SKYLIGHT_ASSET.key,
+    );
+    beamSprite.setOrigin(0.5, 1);
+    beamSprite.setDepth(depth);
+    beamSprite.setAlpha(0.75);
+
+    const alphaTween = this.scene.tweens.add({
+      targets: beamSprite,
+      alpha: { from: 0.85, to: 0.25 },
+      duration: 900,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+
+    this.pendingTurretEffects.set(pendingTurret.id, {
+      sprite: beamSprite,
+      tween: alphaTween,
+    });
+  }
+
+  /**
+   * Remove a pending turret beam by pending turret id.
+   * @param {string} pendingTurretId
+   */
+  removePendingTurret(pendingTurretId) {
+    const effect = this.pendingTurretEffects.get(pendingTurretId);
+    if (!effect) {
+      return;
+    }
+
+    effect.tween?.stop();
+    effect.sprite?.destroy();
+    this.pendingTurretEffects.delete(pendingTurretId);
+  }
+
+  /**
    * Clear all rendered buildings
    */
   clearBuildings() {
@@ -159,6 +223,16 @@ export class BuildingManager {
       }
     });
     this.buildings = [];
+    this.clearPendingTurrets();
+  }
+
+  /**
+   * Clear all pending turret effects.
+   */
+  clearPendingTurrets() {
+    for (const pendingTurretId of this.pendingTurretEffects.keys()) {
+      this.removePendingTurret(pendingTurretId);
+    }
   }
 
   /**
@@ -272,6 +346,13 @@ export class BuildingManager {
         });
       }
     }
+  }
+
+  /**
+   * Destroy the building manager and all rendered objects.
+   */
+  destroy() {
+    this.clearBuildings();
   }
 }
 

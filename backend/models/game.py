@@ -14,10 +14,10 @@ class Game:
     def __init__(
         self,
         name: str,
-        id: str = None,
-        creator_id: str = None,
-        created_at: str = None,
-        seed: int = None,
+        id: Optional[str] = None,
+        creator_id: Optional[str] = None,
+        created_at: Optional[str] = None,
+        seed: Optional[int] = None,
     ):
         self.id = id or str(uuid.uuid4())
         self.name = name
@@ -26,6 +26,7 @@ class Game:
         self.players: List[Player] = []
         self.nb_players = 0
         self.mobs: List[Zombie] = []
+        self.pending_turrets: List[Dict] = []
         self.current_tick = 0  # Game tick counter for synchronization
         if seed is None:
             seed = random.randint(0, 2**31 - 1)
@@ -46,6 +47,7 @@ class Game:
             "created_at": self.created_at,
             "nb_players": self.nb_players,
             "players": [p.to_dict() for p in self.players],
+            "pending_turrets": self.pending_turrets,
             "map": self.map.to_dict(),
         }
 
@@ -60,6 +62,7 @@ class Game:
         )
         game.nb_players = data.get("nb_players", 0)
         game.players = [Player.from_dict(p) for p in data.get("players", [])]
+        game.pending_turrets = data.get("pending_turrets", [])
         if "map" in data:
             game.map = Map.from_dict(data["map"])
         return game

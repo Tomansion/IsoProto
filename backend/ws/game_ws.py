@@ -2,6 +2,7 @@ import asyncio
 import json
 from datetime import datetime
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from config import GAME_TICK_SECONDS
 from services.game_manager import game_manager
 from models.player import Player
 
@@ -45,7 +46,7 @@ class GameConnectionManager:
         """Game tick loop: spawn mobs, move mobs, update turrets and broadcast changes every iteration."""
         try:
             while True:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(GAME_TICK_SECONDS)
 
                 # Stop if the game no longer has active connections
                 connections = self.game_connections.get(game_id)
@@ -58,6 +59,14 @@ class GameConnectionManager:
 
                 # Increment game tick
                 game_manager.tick_game(game_id)
+
+                # Finalize turret builds whose cooldown has ended
+                built_turrets = game_manager.process_pending_turrets(game_id)
+                if built_turrets:
+                    await self.broadcast_game(
+                        game_id,
+                        {"type": "turret_placed", "data": built_turrets},
+                    )
 
                 # Spawn new mobs from waves
                 spawned_mobs = game_manager.spawn_mobs(game_id)
@@ -213,6 +222,7 @@ async def websocket_endpoint(
                 "timestamp": datetime.utcnow().isoformat(),
                 "map": game.map.to_dict(),
                 "mobs": [m.to_dict() for m in game.mobs],
+                "pending_turrets": game.pending_turrets,
             }
         )
 
@@ -279,16 +289,18 @@ async def websocket_endpoint(
                         continue
 
                     # Attempt to place turret
-                    turret = game_manager.add_turret_to_game(game_id, player.id, x, y)
+                    pending_turret = game_manager.queue_turret_build(
+                        game_id, player.id, x, y
+                    )
 
-                    if turret:
-                        # Broadcast turret placement to all players in game
+                    if pending_turret:
+                        # Broadcast turret build start to all players in game
                         await manager.broadcast_game(
                             game_id,
                             {
-                                "type": "turret_placed",
+                                "type": "turret_build_started",
                                 "player": player_name,
-                                "data": turret.to_dict(),
+                                "data": pending_turret,
                             },
                         )
                     else:

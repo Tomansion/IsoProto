@@ -55,6 +55,12 @@ MOB_TYPE_CONFIG = {
         },
     },
 }
+
+# Game timing
+GAME_TICK_SECONDS = 0.1
+TURRET_BUILD_COOLDOWN_SECONDS = 4
+TURRET_BUILD_COOLDOWN_TICKS = int(TURRET_BUILD_COOLDOWN_SECONDS / GAME_TICK_SECONDS)
+
 # Turret type configurations
 TURRET_TYPE_CONFIG = {
     "basic": {

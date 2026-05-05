@@ -1,10 +1,11 @@
 from typing import Dict, Optional, List, Set
+import uuid
 import random
 from models.game import Game
 from models.player import Player
 from models.turret import Turret
 from models.mob import Zombie
-from config import TILE_TREE
+from config import TILE_TREE, TURRET_BUILD_COOLDOWN_TICKS
 
 
 class GameManager:
@@ -130,6 +131,95 @@ class GameManager:
         return ([m.to_dict() for m in game.mobs], dead_mob_ids)
 
     # Turret management
+    def can_place_turret(self, game_id: str, x: int, y: int) -> bool:
+        """Validate whether a turret can be placed or queued on a tile."""
+        game = self.games.get(game_id)
+        if not game:
+            return False
+
+        map_obj = game.map
+
+        if x < 0 or y < 0 or x >= map_obj.width or y >= map_obj.height:
+            return False
+
+        elevation = map_obj.elevation[y][x]
+        if elevation <= 0:
+            return False
+
+        tile = map_obj.tiles[y][x]
+        if tile == TILE_TREE:
+            return False
+
+        if any(b.x == x and b.y == y for b in map_obj.buildings):
+            return False
+
+        if any(t["x"] == x and t["y"] == y for t in game.pending_turrets):
+            return False
+
+        return True
+
+    def queue_turret_build(
+        self,
+        game_id: str,
+        player_id: str,
+        x: int,
+        y: int,
+        cooldown_ticks: int = TURRET_BUILD_COOLDOWN_TICKS,
+    ) -> Optional[dict]:
+        """Queue a turret build and return the pending placement payload."""
+        game = self.games.get(game_id)
+        if not game or not self.can_place_turret(game_id, x, y):
+            return None
+
+        pending_turret = {
+            "id": str(uuid.uuid4()),
+            "x": x,
+            "y": y,
+            "elevation": game.map.elevation[y][x],
+            "player_id": player_id,
+            "started_at_tick": game.current_tick,
+            "complete_at_tick": game.current_tick + cooldown_ticks,
+            "cooldown_ticks": cooldown_ticks,
+            "cooldown_ms": cooldown_ticks * 100,
+        }
+        game.pending_turrets.append(pending_turret)
+        return pending_turret
+
+    def _create_turret(
+        self,
+        game: Game,
+        player_id: str,
+        x: int,
+        y: int,
+        id: Optional[str] = None,
+    ) -> Turret:
+        """Create and register a turret in a game without placement validation."""
+        orientation = random.randint(0, 7)
+        turret = Turret(
+            x=x,
+            y=y,
+            building_id=0,
+            player_id=player_id,
+            orientation=orientation,
+            id=id,
+        )
+
+        turret.update_target(game.mobs, game.current_tick)
+
+        map_obj = game.map
+        map_obj.buildings.append(turret)
+
+        game.pathfinding.update_blocked_tiles(game.map.buildings)
+
+        for mob in game.mobs:
+            cached_path = game.pathfinding.pathfinder.path_cache.get(mob.id, [])
+            if cached_path:
+                game.pathfinding.invalidate_affected_paths(
+                    mob.x, mob.y, mob.id, cached_path
+                )
+
+        return turret
+
     def add_turret_to_game(
         self, game_id: str, player_id: str, x: int, y: int
     ) -> Optional[Turret]:
@@ -146,53 +236,42 @@ class GameManager:
         if not game:
             return None
 
-        map_obj = game.map
-
-        # Validate coordinates are within map
-        if x < 0 or y < 0 or x >= map_obj.width or y >= map_obj.height:
+        if not self.can_place_turret(game_id, x, y):
             return None
 
-        # Validate tile is not water (elevation > 0)
-        elevation = map_obj.elevation[y][x]
-        if elevation <= 0:
-            return None
+        return self._create_turret(game, player_id, x, y)
 
-        # Validate tile has no trees
-        tile = map_obj.tiles[y][x]
-        if tile == TILE_TREE:
-            return None
+    def process_pending_turrets(self, game_id: str) -> list:
+        """Finalize pending turret builds whose cooldown has completed."""
+        game = self.games.get(game_id)
+        if not game or not game.pending_turrets:
+            return []
 
-        # Validate no building already at this location
-        if any(b.x == x and b.y == y for b in map_obj.buildings):
-            return None
+        ready_turrets = []
+        still_pending = []
 
-        # All validation passed - create turret with random orientation
-        orientation = random.randint(0, 7)
-        turret = Turret(
-            x=x,
-            y=y,
-            building_id=0,  # Turret base frame
-            player_id=player_id,
-            orientation=orientation,
-        )
+        for pending_turret in game.pending_turrets:
+            if game.current_tick < pending_turret["complete_at_tick"]:
+                still_pending.append(pending_turret)
+                continue
 
-        # Set correct orientation based on closest mob (no firing at initialization)
-        turret.update_target(game.mobs, game.current_tick)
+            if any(
+                building.x == pending_turret["x"] and building.y == pending_turret["y"]
+                for building in game.map.buildings
+            ):
+                continue
 
-        map_obj.buildings.append(turret)
+            turret = self._create_turret(
+                game,
+                pending_turret["player_id"],
+                pending_turret["x"],
+                pending_turret["y"],
+                id=pending_turret["id"],
+            )
+            ready_turrets.append(turret.to_dict())
 
-        # Update blocked tiles and track newly blocked ones
-        game.pathfinding.update_blocked_tiles(game.map.buildings)
-
-        # Only invalidate paths affected by newly blocked tiles
-        for mob in game.mobs:
-            cached_path = game.pathfinding.pathfinder.path_cache.get(mob.id, [])
-            if cached_path:
-                game.pathfinding.invalidate_affected_paths(
-                    mob.x, mob.y, mob.id, cached_path
-                )
-
-        return turret
+        game.pending_turrets = still_pending
+        return ready_turrets
 
     def tick_turrets(self, game_id: str) -> tuple:
         """Update all turrets to track closest mobs and fire when ready.

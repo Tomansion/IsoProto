@@ -99,6 +99,42 @@ export class PhaserGameManager {
   }
 
   /**
+   * Render a turret on the map.
+   * @param {object} turret - Turret data {id, x, y, orientation}
+   */
+  renderTurret(turret) {
+    if (!this.mapScene) {
+      setTimeout(() => this.renderTurret(turret), 100);
+      return;
+    }
+    this.mapScene.renderTurret(turret);
+  }
+
+  /**
+   * Render a pending turret skylight effect.
+   * @param {object} pendingTurret - Pending turret data {id, x, y, elevation}
+   */
+  renderPendingTurret(pendingTurret) {
+    if (!this.mapScene) {
+      setTimeout(() => this.renderPendingTurret(pendingTurret), 100);
+      return;
+    }
+    this.mapScene.renderPendingTurret(pendingTurret);
+  }
+
+  /**
+   * Remove a pending turret skylight effect.
+   * @param {string} pendingTurretId - Pending turret id
+   */
+  removePendingTurret(pendingTurretId) {
+    if (!this.mapScene) {
+      setTimeout(() => this.removePendingTurret(pendingTurretId), 100);
+      return;
+    }
+    this.mapScene.removePendingTurret(pendingTurretId);
+  }
+
+  /**
    * Play turret shot animations
    * @param {Array} shots - Array of shot data {turret_id, turret_x, turret_y, orientation, mob_id, damage}
    * @param {Array} mobs - Array of mob data {id, x, y, elevation, ...} for explosion locations

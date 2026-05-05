@@ -106,6 +106,11 @@ export const EXPLOSION_ASSET = {
   frameHeight: 96,
 };
 
+export const SKYLIGHT_ASSET = {
+  key: "skylight",
+  url: "/images/animations/Skylight.png",
+};
+
 export const EXPLOSION_ANIM_FRAMERATE = 12;
 
 export default {
@@ -123,5 +128,6 @@ export default {
   ZOMBIE_ASSET,
   ZOMBIE_ANIM_FRAMERATE,
   EXPLOSION_ASSET,
+  SKYLIGHT_ASSET,
   EXPLOSION_ANIM_FRAMERATE,
 };

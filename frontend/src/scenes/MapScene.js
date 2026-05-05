@@ -15,6 +15,7 @@ import {
   TURRET_SHEET_ASSET,
   EXPLOSION_ASSET,
   EXPLOSION_ANIM_FRAMERATE,
+  SKYLIGHT_ASSET,
 } from "../config/mapConfig.js";
 
 export class MapScene extends Phaser.Scene {
@@ -68,6 +69,10 @@ export class MapScene extends Phaser.Scene {
         frameWidth: EXPLOSION_ASSET.frameWidth,
         frameHeight: EXPLOSION_ASSET.frameHeight,
       });
+    }
+
+    if (!this.textures.exists(SKYLIGHT_ASSET.key)) {
+      this.load.image(SKYLIGHT_ASSET.key, SKYLIGHT_ASSET.url);
     }
   }
 
@@ -184,6 +189,12 @@ export class MapScene extends Phaser.Scene {
       return;
     }
 
+    if (!this.textures.exists(SKYLIGHT_ASSET.key)) {
+      console.log("Waiting for skylight image to load...");
+      setTimeout(() => this.renderMap(mapData), 100);
+      return;
+    }
+
     // Clear previous tiles
     this.tileManager.clearTiles();
     this.buildingManager.clearBuildings();
@@ -264,7 +275,39 @@ export class MapScene extends Phaser.Scene {
       return;
     }
 
+    if (
+      !this.mapData.buildings.some((building) => building.id === turretData.id)
+    ) {
+      this.mapData.buildings.push(turretData);
+    }
+
     this.buildingManager.renderTurret(turretData, this.mapData);
+  }
+
+  /**
+   * Render a pending turret skylight effect.
+   * @param {object} pendingTurretData - Pending turret data {id, x, y, elevation}
+   */
+  renderPendingTurret(pendingTurretData) {
+    if (!this.buildingManager) {
+      console.warn("BuildingManager not ready");
+      return;
+    }
+
+    this.buildingManager.renderPendingTurret(pendingTurretData);
+  }
+
+  /**
+   * Remove a pending turret skylight effect.
+   * @param {string} pendingTurretId - Pending turret id
+   */
+  removePendingTurret(pendingTurretId) {
+    if (!this.buildingManager) {
+      console.warn("BuildingManager not ready");
+      return;
+    }
+
+    this.buildingManager.removePendingTurret(pendingTurretId);
   }
 
   /**

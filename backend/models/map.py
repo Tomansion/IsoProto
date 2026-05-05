@@ -3,7 +3,7 @@
 import uuid
 from config import MAP_SIZE, MAP_CENTER, BASE_RADIUS
 from services.map_generator import MapGenerator
-from typing import List
+from typing import List, Optional
 
 
 class Building:
@@ -15,9 +15,9 @@ class Building:
         y: int,
         building_id: int = 0,
         elevation: float = 0,
-        id: str = None,
+        id: Optional[str] = None,
         building_type: str = "base",
-        player_id: str = None,
+        player_id: Optional[str] = None,
         orientation: int = 0,
     ):
         self.id = id or str(uuid.uuid4())

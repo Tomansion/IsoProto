@@ -142,6 +142,11 @@ export default {
               phaserGameManager.updateMobs(this.mobs);
             }
 
+            const pendingTurrets = message.pending_turrets || [];
+            for (const pendingTurret of pendingTurrets) {
+              phaserGameManager.renderPendingTurret(pendingTurret);
+            }
+
             // Setup tile click detection AFTER map is ready
             // Wait for scene to be fully initialized
             setTimeout(() => {
@@ -172,11 +177,19 @@ export default {
           break;
         case "turret_placed":
           if (message.data) {
-            // Render the newly placed turret
-            const mapScene = phaserGameManager.getMapScene();
-            if (mapScene) {
-              mapScene.renderTurret(message.data);
+            const turrets = Array.isArray(message.data)
+              ? message.data
+              : [message.data];
+
+            for (const turret of turrets) {
+              phaserGameManager.removePendingTurret(turret.id);
+              phaserGameManager.renderTurret(turret);
             }
+          }
+          break;
+        case "turret_build_started":
+          if (message.data) {
+            phaserGameManager.renderPendingTurret(message.data);
           }
           break;
         case "mob_update":
