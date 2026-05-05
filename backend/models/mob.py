@@ -208,6 +208,9 @@ class Mob:
 
     def to_dict(self) -> Dict:
         """Serialize mob to dictionary for WS broadcasting."""
+        # Check if in water (elevation <= 0)
+        is_in_water = self.elevation <= 0
+        
         return {
             "id": self.id,
             "x": round(self.x, 3),
@@ -216,6 +219,7 @@ class Mob:
             "mob_type": self.mob_type,
             "elevation": round(self.elevation, 2),
             "orientation": self.orientation,
+            "is_in_water": is_in_water,
         }
 
     @classmethod

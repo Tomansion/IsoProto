@@ -42,6 +42,18 @@ export class MobManager {
         repeat: -1,
       });
     }
+
+    if (!this.scene.anims.exists("zombie-swim")) {
+      this.scene.anims.create({
+        key: "zombie-swim",
+        frames: this.scene.anims.generateFrameNumbers(ZOMBIE_ASSET.key, {
+          start: 6,
+          end: 11,
+        }),
+        frameRate: ZOMBIE_ANIM_FRAMERATE,
+        repeat: -1,
+      });
+    }
   }
 
   /**
@@ -49,7 +61,7 @@ export class MobManager {
    * Creates new sprites for new mobs, updates positions for existing ones,
    * and removes sprites for mobs that are no longer present.
    *
-   * @param {Array} mobs - Array of mob data objects {id, x, y, hp, mob_type, elevation, orientation}
+   * @param {Array} mobs - Array of mob data objects {id, x, y, hp, mob_type, elevation, orientation, is_in_water}
    */
   updateMobs(mobs) {
     // Track which mob IDs are still active
@@ -79,12 +91,19 @@ export class MobManager {
       // Flip when facing LEFT side (1, 2, 3)
       const flipX = mob.orientation >= 1 && mob.orientation <= 3;
 
+      // Choose animation based on water status
+      const animationKey = mob.is_in_water ? "zombie-swim" : "zombie-walk";
+
       if (this.mobSprites[mob.id]) {
         // Move existing sprite
         const sprite = this.mobSprites[mob.id];
         sprite.setPosition(screenX, screenY);
         sprite.setDepth(depth);
         sprite.setFlipX(flipX);
+        // Play animation if it changed
+        if (sprite.anims.currentAnim?.key !== animationKey) {
+          sprite.play(animationKey);
+        }
       } else {
         // Spawn new sprite
         const sprite = this.scene.add.sprite(
@@ -95,7 +114,7 @@ export class MobManager {
         sprite.setOrigin(0.5, 1.25); // Anchor near the feet for better isometric look
         sprite.setDepth(depth);
         sprite.setFlipX(flipX);
-        sprite.play("zombie-walk");
+        sprite.play(animationKey);
         this.mobSprites[mob.id] = sprite;
       }
     }
