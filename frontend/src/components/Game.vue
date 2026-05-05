@@ -3,37 +3,27 @@
     <div class="terminal-window">
       <div class="terminal-main">
         <div class="game-content">
-          <div class="game-board">
-            <div v-if="loading" class="status">connecting...</div>
-            <div v-else-if="error" class="status error-msg">
-              error: {{ error }}
+          <div class="game-panel">
+            <div class="game-board">
+              <div v-if="loading" class="status">connecting...</div>
+              <div v-else-if="error" class="status error-msg">
+                error: {{ error }}
+              </div>
+              <div
+                v-else
+                id="game-canvas-container"
+                class="phaser-container"
+              ></div>
             </div>
-            <div
-              v-else
-              id="game-canvas-container"
-              class="phaser-container"
-            ></div>
-
-            <!-- Game Info Overlay -->
-            <div class="game-info-overlay">
+            <div class="game-toolbar">
               <div class="game-name">{{ game?.name || "loading..." }}</div>
               <div class="game-controls">
+                <button @click="zoomIn" class="zoom-btn zoom-in" title="Zoom In">+</button>
+                <button @click="zoomOut" class="zoom-btn zoom-out" title="Zoom Out">−</button>
                 <button @click="leaveGame" class="leave-btn">[Q] quit</button>
               </div>
             </div>
 
-            <!-- Players Panel Overlay -->
-            <div class="players-overlay">
-              <div class="players-list">
-                <div
-                  v-for="player in game?.players"
-                  :key="player.id"
-                  class="player-item"
-                >
-                  > {{ player.username }}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -257,6 +247,18 @@ export default {
         }),
       );
     },
+    zoomIn() {
+      const mapScene = phaserGameManager.getMapScene();
+      if (mapScene && mapScene.cameraManager) {
+        mapScene.cameraManager.zoomIn();
+      }
+    },
+    zoomOut() {
+      const mapScene = phaserGameManager.getMapScene();
+      if (mapScene && mapScene.cameraManager) {
+        mapScene.cameraManager.zoomOut();
+      }
+    },
   },
 };
 </script>
@@ -294,6 +296,22 @@ export default {
   flex: 1;
   overflow: hidden;
   min-height: 0;
+}
+
+.game-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.game-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  background-color: rgba(0, 26, 0, 1);
 }
 
 .game-board {
@@ -344,25 +362,6 @@ export default {
   color: #ff0000;
 }
 
-/* Game Info Overlay */
-.game-info-overlay {
-  margin: 25px;
-  border-radius: 3px;
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px;
-  background-color: rgba(0, 26, 0, 1);
-  border-bottom: 1px solid #00aa00;
-  font-size: 13px;
-  z-index: 20;
-  gap: 12px;
-  pointer-events: none;
-}
-
 .game-name {
   color: #00ff00;
   font-weight: bold;
@@ -371,9 +370,8 @@ export default {
 .game-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   font-size: 12px;
-  pointer-events: all;
 }
 
 .player-count {
@@ -382,54 +380,50 @@ export default {
 
 .leave-btn {
   background-color: transparent;
-  border: none;
+  border: 1px solid #aa0000;
+  border-radius: 3px;
   color: #ff0000;
   cursor: pointer;
   font-family: "Courier New", monospace;
   font-size: 12px;
-  padding: 0;
-  transition: color 0.2s;
+  padding: 8px 12px;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background-color 0.2s;
 }
 
 .leave-btn:hover {
-  background-color: transparent;
+  background-color: rgba(170, 0, 0, 0.15);
   color: #ff6666;
+  border-color: #ff6666;
 }
 
-/* Players Panel Overlay */
-.players-overlay {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 280px;
-  max-height: 50vh;
-  display: flex;
-  flex-direction: column;
-  z-index: 20;
-  overflow: hidden;
-}
-
-.players-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.player-item {
-  font-size: 12px;
-  padding: 6px 12px;
+.zoom-btn {
+  width: 36px;
+  height: 36px;
+  background-color: rgba(0, 26, 0, 1);
+  border: 1px solid #00aa00;
+  border-radius: 3px;
   color: #00ff00;
-  background-color: #000000;
-  border-radius: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: 500;
+  font-family: "Courier New", monospace;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
   transition: all 0.2s;
-  cursor: default;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.zoom-btn:hover {
+  background-color: rgba(0, 170, 0, 0.8);
+  color: #55ff55;
+  border-color: #55ff55;
+}
+
+.zoom-btn:active {
+  transform: scale(0.95);
 }
 </style>

@@ -192,6 +192,30 @@ export class CameraManager {
   }
 
   /**
+   * Zoom camera in
+   */
+  zoomIn() {
+    const oldZoom = this.camera.zoom;
+    const newZoom = Math.max(0.5, Math.min(3.0, oldZoom + 0.1));
+
+    if (newZoom !== oldZoom) {
+      this.camera.setZoom(newZoom);
+    }
+  }
+
+  /**
+   * Zoom camera out
+   */
+  zoomOut() {
+    const oldZoom = this.camera.zoom;
+    const newZoom = Math.max(0.5, Math.min(3.0, oldZoom - 0.1));
+
+    if (newZoom !== oldZoom) {
+      this.camera.setZoom(newZoom);
+    }
+  }
+
+  /**
    * Destroy camera manager
    */
   destroy() {
