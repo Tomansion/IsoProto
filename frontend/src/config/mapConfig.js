@@ -101,10 +101,23 @@ export const ZOMBIE_ANIM_FRAMERATE = 8;
 // Explosion spritesheet asset — 10 frames of 96x96px explosion animation
 export const EXPLOSION_ASSET = {
   key: "explosion",
-  url: "/images/explosion-sheet.png",
-  frameWidth: 96,
-  frameHeight: 96,
+  url: "/images/animations/explosion-sheet-2.png",
+  frameWidth: 32,
+  frameHeight: 64,
 };
+
+export const TURRET_SPAWN_EXPLOSION_ASSET = {
+  key: "turret-spawn-explosion",
+  url: "/images/animations/explosion-sheet-1.png",
+  frameWidth: 48,
+  frameHeight: 48,
+  frameRate: 10,
+};
+
+export const TURRET_SPAWN_DROP_DURATION = 38;
+export const TURRET_SPAWN_DROP_HEIGHT = 500;
+export const TURRET_SPAWN_DROP_STRETCH_Y = 2;
+export const TURRET_SPAWN_BLUR_LAYERS = 1;
 
 export const SKYLIGHT_ASSET = {
   key: "skylight",
@@ -128,6 +141,11 @@ export default {
   ZOMBIE_ASSET,
   ZOMBIE_ANIM_FRAMERATE,
   EXPLOSION_ASSET,
+  TURRET_SPAWN_EXPLOSION_ASSET,
+  TURRET_SPAWN_DROP_DURATION,
+  TURRET_SPAWN_DROP_HEIGHT,
+  TURRET_SPAWN_DROP_STRETCH_Y,
+  TURRET_SPAWN_BLUR_LAYERS,
   SKYLIGHT_ASSET,
   EXPLOSION_ANIM_FRAMERATE,
 };

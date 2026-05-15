@@ -87,10 +87,20 @@ class MapGenerator:
             tiles.append(row)
             elevation.append(elevation_row)
 
+        # Calculate a gaussian centered around the base to create a hill
+        for y in range(self.height):
+            for x in range(self.width):
+                distance_from_center = (
+                    (x - MAP_CENTER) ** 2 + (y - MAP_CENTER) ** 2
+                ) ** 0.5
+                gaussian = max(0, 1 - (distance_from_center / (BASE_RADIUS * 4)) ** 2)
+                elevation[y][x] += int(gaussian * 10) - 5
+
         # Adjust elevation to ensure minimum is 0
         min_elevation = min(min(row) for row in elevation)
         for y in range(self.height):
             for x in range(self.width):
-                elevation[y][x] = max(0, elevation[y][x] - min_elevation - 8)
+                elevation[y][x] = max(0, elevation[y][x] - min_elevation - 9)
+
 
         return tiles, elevation

@@ -9,15 +9,18 @@
 ✔ Reduce zombies size @done(26-05-02 21:39)
 ✔ Swimming animation @done(26-05-05 18:56)
 ✔ Zoom in/out phone @done(26-05-06 00:07)
+✔ turret Spawn animation: drop from the sky, add boom landing @done(26-05-15 01:56)
 
-☐ turret Spawn animation: drop from the sky
-☐ Make the 2 barrels of the turret shot one after the other 
+☐ Be able to place walls
+☐ Add currency
 ☐ Fix building elevation by placing structure blocks bellow them
 ☐ Auto refresh websocket when connection lost
 ☐ change water to a single sprite (circular ?)
+☐ Make that after each wave, trees grow, water can rise or get lower, terrain changes
 ☐ Unify ws messages, make smaller uuid
 ☐ Make the path only move by 30 tile at a time
 ☐ Fix issue game closing when 1 person leaves. it closes all games ?
+☐ Make the 2 barrels of the turret shot one after the other 
 ☐ Fix the overall deph issues
 ☐ Make an island
 ☐ Place players cursor

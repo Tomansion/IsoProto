@@ -11,7 +11,7 @@ PERLIN_FREQUENCY = 1.0
 PERLIN_OCTAVES = 3
 PERLIN_PERSISTENCE = 0.65
 PERLIN_LACUNARITY = 2.0
-PERLIN_TREE_THRESHOLD = 0.6  # Noise value above this = tree
+PERLIN_TREE_THRESHOLD = 0.65  # Noise value above this = tree
 
 # Elevation parameters (separate Perlin noise for terrain height)
 ELEVATION_SCALE = 100.0  # Lower values = larger elevation features
@@ -50,7 +50,7 @@ MOB_TYPE_CONFIG = {
         "pathfinding": {
             "base_cost": 1.0,  # Base cost to move to a tile
             "tree_cost": 0.5,  # Additional cost for trees (added to base)
-            "water_cost": 10.0,  # Additional cost for water
+            "water_cost": 4.0,  # Additional cost for water
             "randomness": 1.4,  # Random variation (0.0 = no randomness, 2.0 = ±100%)
         },
     },
@@ -58,7 +58,7 @@ MOB_TYPE_CONFIG = {
 
 # Game timing
 GAME_TICK_SECONDS = 0.1
-TURRET_BUILD_COOLDOWN_SECONDS = 4
+TURRET_BUILD_COOLDOWN_SECONDS = 1
 TURRET_BUILD_COOLDOWN_TICKS = int(TURRET_BUILD_COOLDOWN_SECONDS / GAME_TICK_SECONDS)
 
 # Turret type configurations

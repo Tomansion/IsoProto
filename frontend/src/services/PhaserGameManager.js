@@ -38,6 +38,7 @@ export class PhaserGameManager {
     // Use a timeout to ensure scene initialization
     // Phaser scenes initialize asynchronously, so we need to wait long enough
     setTimeout(() => {
+      if (!this.game) return;
       this.mapScene = this.game.scene.getScene("MapScene");
     }, 300);
 

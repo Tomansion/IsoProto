@@ -15,6 +15,7 @@ import {
   TURRET_SHEET_ASSET,
   EXPLOSION_ASSET,
   EXPLOSION_ANIM_FRAMERATE,
+  TURRET_SPAWN_EXPLOSION_ASSET,
   SKYLIGHT_ASSET,
 } from "../config/mapConfig.js";
 
@@ -71,6 +72,17 @@ export class MapScene extends Phaser.Scene {
       });
     }
 
+    if (!this.textures.exists(TURRET_SPAWN_EXPLOSION_ASSET.key)) {
+      this.load.spritesheet(
+        TURRET_SPAWN_EXPLOSION_ASSET.key,
+        TURRET_SPAWN_EXPLOSION_ASSET.url,
+        {
+          frameWidth: TURRET_SPAWN_EXPLOSION_ASSET.frameWidth,
+          frameHeight: TURRET_SPAWN_EXPLOSION_ASSET.frameHeight,
+        },
+      );
+    }
+
     if (!this.textures.exists(SKYLIGHT_ASSET.key)) {
       this.load.image(SKYLIGHT_ASSET.key, SKYLIGHT_ASSET.url);
     }
@@ -93,9 +105,24 @@ export class MapScene extends Phaser.Scene {
         key: "explosion",
         frames: this.anims.generateFrameNumbers(EXPLOSION_ASSET.key, {
           start: 0,
-          end: 9, // 10 frames (0-9)
+          end: 5,
         }),
         frameRate: EXPLOSION_ANIM_FRAMERATE,
+        repeat: 0,
+      });
+    }
+
+    if (!this.anims.exists("turret-spawn-explosion")) {
+      this.anims.create({
+        key: "turret-spawn-explosion",
+        frames: this.anims.generateFrameNumbers(
+          TURRET_SPAWN_EXPLOSION_ASSET.key,
+          {
+            start: 0,
+            end: 9,
+          },
+        ),
+        frameRate: TURRET_SPAWN_EXPLOSION_ASSET.frameRate,
         repeat: 0,
       });
     }
@@ -185,6 +212,12 @@ export class MapScene extends Phaser.Scene {
     // Ensure turret sheet is loaded
     if (!this.textures.exists(TURRET_SHEET_ASSET.key)) {
       console.log("Waiting for turret sheet to load...");
+      setTimeout(() => this.renderMap(mapData), 100);
+      return;
+    }
+
+    if (!this.textures.exists(TURRET_SPAWN_EXPLOSION_ASSET.key)) {
+      console.log("Waiting for turret spawn explosion sheet to load...");
       setTimeout(() => this.renderMap(mapData), 100);
       return;
     }
@@ -281,7 +314,9 @@ export class MapScene extends Phaser.Scene {
       this.mapData.buildings.push(turretData);
     }
 
-    this.buildingManager.renderTurret(turretData, this.mapData);
+    this.buildingManager.renderTurret(turretData, this.mapData, {
+      playSpawnEffect: true,
+    });
   }
 
   /**
