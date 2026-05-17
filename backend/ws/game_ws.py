@@ -58,7 +58,12 @@ class GameConnectionManager:
                     break
 
                 # Increment game tick
-                game_manager.tick_game(game_id)
+                player_wallets = game_manager.tick_game(game_id)
+                if player_wallets:
+                    await self.broadcast_game(
+                        game_id,
+                        {"type": "wallets_updated", "data": player_wallets},
+                    )
 
                 # Finalize turret builds whose cooldown has ended
                 built_buildings, changed_tiles, drop_kill_mob_ids = (
@@ -250,6 +255,8 @@ async def websocket_endpoint(
                 "map": game.map.to_dict(),
                 "mobs": [m.to_dict() for m in game.mobs],
                 "pending_buildings": game.pending_buildings,
+                "players": [p.to_dict() for p in game.players],
+                "building_catalog": game_manager.serialize_building_catalog(),
             }
         )
 
@@ -261,9 +268,8 @@ async def websocket_endpoint(
                     "id": game.id,
                     "name": game.name,
                     "nb_players": game.nb_players,
-                    "players": [
-                        {"id": p.id, "username": p.username} for p in game.players
-                    ],
+                    "players": [p.to_dict() for p in game.players],
+                    "building_catalog": game_manager.serialize_building_catalog(),
                 },
             }
         )
@@ -281,9 +287,7 @@ async def websocket_endpoint(
                     "player": player_name,
                     "data": {
                         "nb_players": game.nb_players,
-                        "players": [
-                            {"id": p.id, "username": p.username} for p in game.players
-                        ],
+                        "players": [p.to_dict() for p in game.players],
                     },
                 },
             )
@@ -317,11 +321,21 @@ async def websocket_endpoint(
                         continue
 
                     # Attempt to place building
-                    pending_building = game_manager.queue_building_build(
-                        game_id, player.id, x, y, building_type
+                    pending_building, error_code, player_wallets = (
+                        game_manager.queue_building_build(
+                            game_id,
+                            player.id,
+                            x,
+                            y,
+                            building_type,
+                        )
                     )
 
                     if pending_building:
+                        await manager.broadcast_game(
+                            game_id,
+                            {"type": "wallets_updated", "data": player_wallets},
+                        )
                         # Broadcast building build start to all players in game
                         await manager.broadcast_game(
                             game_id,
@@ -332,11 +346,15 @@ async def websocket_endpoint(
                             },
                         )
                     else:
+                        message_text = f"Cannot place {building_type} at this location"
+                        if error_code == "not_enough_money":
+                            message_text = f"Not enough money for {building_type}"
+
                         # Send error back to requesting player
                         await websocket.send_json(
                             {
                                 "type": "action_error",
-                                "message": f"Cannot place {building_type} at this location",
+                                "message": message_text,
                                 "data": {
                                     "x": x,
                                     "y": y,
@@ -387,10 +405,7 @@ async def websocket_endpoint(
                         "player": player_name,
                         "data": {
                             "nb_players": game.nb_players,
-                            "players": [
-                                {"id": p.id, "username": p.username}
-                                for p in game.players
-                            ],
+                            "players": [p.to_dict() for p in game.players],
                         },
                     },
                 )

@@ -16,7 +16,24 @@
               ></div>
             </div>
             <div class="game-toolbar">
-              <div class="game-name">{{ game?.name || "loading..." }}</div>
+              <div v-if="players.length > 0" class="players-panel">
+                <div class="players-list">
+                  <div
+                    v-for="player in players"
+                    :key="player.id"
+                    class="player-wallet"
+                    :class="{ self: player.username === playerName }"
+                  >
+                    <span class="player-wallet-name">{{
+                      player.username
+                    }}</span>
+                    <span class="player-wallet-value">
+                      <img :src="coinAssetUrl" alt="coin" class="coin-icon" />
+                      {{ player.wallet ?? 0 }}
+                    </span>
+                  </div>
+                </div>
+              </div>
               <div class="game-controls">
                 <button
                   @click="zoomIn"
@@ -43,7 +60,11 @@
                 v-for="building in buildingOptions"
                 :key="building.type"
                 class="building-card"
-                :class="{ selected: selectedBuildingType === building.type }"
+                :class="{
+                  selected: selectedBuildingType === building.type,
+                  disabled: !building.canAfford,
+                }"
+                :disabled="!building.canAfford"
                 @click="selectedBuildingType = building.type"
               >
                 <div class="building-card-header">
@@ -53,8 +74,9 @@
                   }}</span>
                 </div>
                 <div class="building-card-desc">{{ building.description }}</div>
-                <div class="building-card-time">
-                  spawn: {{ formatBuildTime(building.buildTimeMs) }}
+                <div class="building-card-cost">
+                  <img :src="coinAssetUrl" alt="coin" class="coin-icon" />
+                  {{ building.cost }}
                 </div>
               </button>
             </div>
@@ -68,7 +90,11 @@
 <script>
 import api from "../services/api";
 import phaserGameManager from "../services/PhaserGameManager.js";
-import { BUILDING_UI_CONFIG, BUILDING_TYPES } from "../config/mapConfig.js";
+import {
+  BUILDING_UI_CONFIG,
+  BUILDING_TYPES,
+  COIN_ASSET_URL,
+} from "../config/mapConfig.js";
 
 export default {
   name: "Game",
@@ -82,14 +108,11 @@ export default {
       websocket: null,
       map: null,
       mobs: [],
+      players: [],
+      buildingCatalog: {},
       connectionTimeout: null,
+      coinAssetUrl: COIN_ASSET_URL,
       selectedBuildingType: BUILDING_TYPES.TURRET,
-      buildingOptions: Object.entries(BUILDING_UI_CONFIG).map(
-        ([type, config]) => ({
-          type,
-          ...config,
-        }),
-      ),
     };
   },
   mounted() {
@@ -174,6 +197,8 @@ export default {
         case "welcome":
           if (message.map) {
             this.map = message.map;
+            this.players = message.players || [];
+            this.buildingCatalog = message.building_catalog || {};
             // Initialize mobs list from welcome message
             this.mobs = message.mobs || [];
             // Render map in Phaser
@@ -205,17 +230,27 @@ export default {
           break;
         case "game_state":
           this.game = message.data;
+          this.players = message.data?.players || [];
+          this.buildingCatalog = message.data?.building_catalog || {};
           break;
         case "player_joined":
           if (message.data) {
             this.game.nb_players = message.data.nb_players;
             this.game.players = message.data.players;
+            this.players = message.data.players;
           }
           break;
         case "player_left":
           if (message.data) {
             this.game.nb_players = message.data.nb_players;
             this.game.players = message.data.players;
+            this.players = message.data.players;
+          }
+          break;
+        case "wallets_updated":
+          this.players = message.data || [];
+          if (this.game) {
+            this.game.players = this.players;
           }
           break;
         case "building_placed":
@@ -339,6 +374,17 @@ export default {
         return;
       }
 
+      const selectedBuilding = this.buildingOptions.find(
+        (building) => building.type === this.selectedBuildingType,
+      );
+      if (
+        selectedBuilding &&
+        this.currentPlayerWallet < selectedBuilding.cost
+      ) {
+        console.warn("Not enough money");
+        return;
+      }
+
       this.websocket.send(
         JSON.stringify({
           type: "player_action",
@@ -365,6 +411,30 @@ export default {
       if (mapScene && mapScene.cameraManager) {
         mapScene.cameraManager.zoomOut();
       }
+    },
+  },
+  computed: {
+    buildingOptions() {
+      return Object.entries(BUILDING_UI_CONFIG)
+        .map(([type, config]) => {
+          const catalogEntry = this.buildingCatalog[type] || {};
+          const cost = catalogEntry.cost ?? 0;
+          return {
+            type,
+            ...config,
+            footprint: catalogEntry.footprint || "?x?",
+            buildTimeMs: catalogEntry.build_time_ms ?? 0,
+            cost,
+            canAfford: this.currentPlayerWallet >= cost,
+          };
+        })
+        .filter((building) => Boolean(this.buildingCatalog[building.type]));
+    },
+    currentPlayerWallet() {
+      const currentPlayer = this.players.find(
+        (player) => player.username === this.playerName,
+      );
+      return currentPlayer?.wallet ?? 0;
     },
   },
 };
@@ -453,6 +523,52 @@ export default {
   height: 100%;
 }
 
+.players-panel {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.players-list {
+  display: flex;
+  gap: 10px;
+}
+
+.player-wallet {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #c4ffc4;
+  font-size: 12px;
+  background-color: rgba(0, 26, 0, 0.8);
+  border: 1px solid #007700;
+  border-radius: 4px;
+  padding: 6px 10px;
+}
+
+.player-wallet-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-wallet-value,
+.building-card-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #88ff88;
+  font-weight: bold;
+  font-size: 11px;
+}
+
+.coin-icon {
+  width: 12px;
+  height: 12px;
+  image-rendering: pixelated;
+}
+
 .building-menu {
   width: 260px;
   min-width: 260px;
@@ -506,6 +622,21 @@ export default {
   border-color: #55ff55;
   background-color: rgba(0, 60, 0, 1);
   transform: translateY(-1px);
+}
+
+.building-card:disabled,
+.building-card.disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  border-color: #335533;
+  background-color: rgba(0, 20, 0, 0.75);
+  transform: none;
+}
+
+.building-card:disabled:hover,
+.building-card.disabled:hover {
+  border-color: #335533;
+  background-color: rgba(0, 20, 0, 0.75);
 }
 
 .building-card-header {

@@ -117,9 +117,9 @@ class Mob:
 
     def get_distance_to_building(self, building) -> float:
         """Return the shortest distance from the mob to a building footprint."""
-        footprint_radius = BUILDING_TYPE_CONFIG.get(
-            building.building_type, {}
-        ).get("footprint_radius", 0)
+        footprint_radius = BUILDING_TYPE_CONFIG.get(building.building_type, {}).get(
+            "footprint_radius", 0
+        )
 
         min_x = building.x - footprint_radius
         max_x = building.x + footprint_radius
@@ -134,9 +134,9 @@ class Mob:
 
     def get_attack_point(self, building) -> Tuple[float, float]:
         """Return the closest point on a building footprint to face while attacking."""
-        footprint_radius = BUILDING_TYPE_CONFIG.get(
-            building.building_type, {}
-        ).get("footprint_radius", 0)
+        footprint_radius = BUILDING_TYPE_CONFIG.get(building.building_type, {}).get(
+            "footprint_radius", 0
+        )
 
         min_x = building.x - footprint_radius
         max_x = building.x + footprint_radius

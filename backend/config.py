@@ -65,6 +65,12 @@ MOB_TYPE_CONFIG = {
 # Game timing
 GAME_TICK_SECONDS = 0.1
 
+CURRENCY_CONFIG = {
+    "starting_amount": 80,
+    "income_amount": 5,
+    "income_every_ticks": 20,
+}
+
 BUILDING_TYPE_CONFIG = {
     "turret": {
         "footprint_radius": 1,
@@ -73,6 +79,7 @@ BUILDING_TYPE_CONFIG = {
         "building_id": 0,
         "blocks_path": True,
         "hp": 50,
+        "cost": 50,
         "targetable_environments": {
             "tree": False,
             "water": True,
@@ -86,6 +93,7 @@ BUILDING_TYPE_CONFIG = {
         "building_id": 0,
         "blocks_path": True,
         "hp": 100,
+        "cost": 5,
     },
     "base": {
         "footprint_radius": 0,
@@ -94,6 +102,7 @@ BUILDING_TYPE_CONFIG = {
         "building_id": 0,
         "blocks_path": False,
         "hp": 1000,
+        "cost": 0,
     },
 }
 

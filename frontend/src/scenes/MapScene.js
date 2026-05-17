@@ -258,7 +258,11 @@ export class MapScene extends Phaser.Scene {
    * @param {Array} changedTiles - Array of tile updates {x, y, tile}
    */
   updateMapTiles(changedTiles) {
-    if (!this.mapData || !Array.isArray(changedTiles) || changedTiles.length === 0) {
+    if (
+      !this.mapData ||
+      !Array.isArray(changedTiles) ||
+      changedTiles.length === 0
+    ) {
       return;
     }
 

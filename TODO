@@ -15,18 +15,20 @@
 ✔ Make that contstructions destroy trees @done(26-05-17 13:57)
 ✔ Make the mob not visible when behind a tree @done(26-05-17 14:13)
 ✔ Building targetable if blocking @done(26-05-17 14:50)
+✔ Add currency @done(26-05-17 15:54)
 
-☐ Add currency
+☐ Add saw wall
 ☐ Fix building elevation by placing structure blocks bellow them
 ☐ Auto refresh websocket when connection lost
 ☐ change water to a single sprite (circular ?)
 ☐ Make that after each wave, trees grow, water can rise or get lower, terrain changes
 ☐ Unify ws messages, make smaller uuid
+☐ Fix path finding being refreshed for all mobs
 ☐ Make the path only move by 30 tile at a time
 ☐ Fix issue game closing when 1 person leaves. it closes all games ?
 ☐ Make the 2 barrels of the turret shot one after the other 
 ☐ Fix the overall deph issues
-☐ Make an island
+☐ Make an island, make that the elevation decrese as long as the water to land ratio is not met
 ☐ Place players cursor
 ☐ Display available turret placement
 ☐ Display turret range 

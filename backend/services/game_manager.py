@@ -1,12 +1,13 @@
 from typing import Dict, Optional, List, Set, cast
 import uuid
 import random
+import math
 from models.game import Game
 from models.player import Player
 from models.map import Building
 from models.turret import Turret
 from models.mob import Zombie
-from config import BUILDING_TYPE_CONFIG
+from config import BUILDING_TYPE_CONFIG, CURRENCY_CONFIG
 
 
 class GameManager:
@@ -96,9 +97,33 @@ class GameManager:
         self.game_ws_connections[game_id].append(ws)
 
     # Mob management
-    def _get_mob_remaining_path_tiles(
-        self, game: Game, mob
-    ) -> set[tuple[int, int]]:
+    def _get_player(self, game: Game, player_id: str) -> Optional[Player]:
+        """Return a player instance by id."""
+        return next((player for player in game.players if player.id == player_id), None)
+
+    def _serialize_players(self, game: Game) -> List[dict]:
+        """Return serialized players for websocket payloads."""
+        return [player.to_dict() for player in game.players]
+
+    def serialize_building_catalog(self) -> Dict[str, dict]:
+        """Return frontend-facing building catalog derived from backend config."""
+        catalog = {}
+        for building_type, config in BUILDING_TYPE_CONFIG.items():
+            if building_type == "base":
+                continue
+
+            footprint_radius = int(config.get("footprint_radius", 0))
+            footprint_size = footprint_radius * 2 + 1
+            catalog[building_type] = {
+                "cost": int(config.get("cost", 0)),
+                "footprint": f"{footprint_size}x{footprint_size}",
+                "footprint_radius": footprint_radius,
+                "build_time_ms": int(config.get("build_cooldown_seconds", 0) * 1000),
+            }
+
+        return catalog
+
+    def _get_mob_remaining_path_tiles(self, game: Game, mob) -> set[tuple[int, int]]:
         """Return the remaining cached path tiles for a mob."""
         cached_path = game.pathfinding.pathfinder.path_cache.get(mob.id, [])
         path_index = game.pathfinding.pathfinder.path_index.get(mob.id, 0)
@@ -134,9 +159,9 @@ class GameManager:
                 if (
                     current_distance <= mob.attack_range
                     and self._is_building_on_mob_path(game, mob, current_target)
-                    and BUILDING_TYPE_CONFIG.get(
-                        current_target.building_type, {}
-                    ).get("can_be_attacked", True)
+                    and BUILDING_TYPE_CONFIG.get(current_target.building_type, {}).get(
+                        "can_be_attacked", True
+                    )
                 ):
                     return current_target
 
@@ -355,15 +380,25 @@ class GameManager:
 
     def queue_building_build(
         self, game_id: str, player_id: str, x: int, y: int, building_type: str
-    ) -> Optional[dict]:
-        """Queue a building build and return the pending payload."""
+    ) -> tuple[Optional[dict], Optional[str], List[dict]]:
+        """Queue a building build and return payload, error code, and wallets."""
         game = self.games.get(game_id)
         building_config = BUILDING_TYPE_CONFIG.get(building_type)
         if not game or not building_config:
-            return None
+            return (None, "invalid_building_type", [])
+
+        player = self._get_player(game, player_id)
+        if player is None:
+            return (None, "player_not_found", [])
 
         if not self.can_place_building(game_id, x, y, building_type):
-            return None
+            return (None, "invalid_placement", [])
+
+        building_cost = int(building_config.get("cost", 0))
+        if player.wallet < building_cost:
+            return (None, "not_enough_money", self._serialize_players(game))
+
+        player.wallet -= building_cost
 
         cooldown_ticks = building_config["build_cooldown_ticks"]
         pending_building = {
@@ -380,7 +415,7 @@ class GameManager:
             "cooldown_ms": int(cooldown_ticks * 100),
         }
         game.pending_buildings.append(pending_building)
-        return pending_building
+        return (pending_building, None, self._serialize_players(game))
 
     def queue_turret_build(
         self,
@@ -397,7 +432,9 @@ class GameManager:
                 BUILDING_TYPE_CONFIG["turret"]["build_cooldown_ticks"]
             )
 
-        pending_building = self.queue_building_build(game_id, player_id, x, y, "turret")
+        pending_building, _, _ = self.queue_building_build(
+            game_id, player_id, x, y, "turret"
+        )
         if pending_building:
             pending_building["cooldown_ticks"] = resolved_cooldown_ticks
             pending_building["complete_at_tick"] = (
@@ -426,9 +463,7 @@ class GameManager:
                 building_id=building_config.get("building_id", 0),
                 player_id=player_id,
                 orientation=orientation,
-                targetable_environments=building_config.get(
-                    "targetable_environments"
-                ),
+                targetable_environments=building_config.get("targetable_environments"),
                 id=id,
             )
             building.update_target(game.mobs, game.current_tick)
@@ -601,11 +636,21 @@ class GameManager:
 
         return (rotations, shots)
 
-    def tick_game(self, game_id: str) -> None:
-        """Increment game tick counter."""
+    def tick_game(self, game_id: str) -> List[dict]:
+        """Increment game tick counter and process passive income."""
         game = self.games.get(game_id)
         if game:
             game.current_tick += 1
+            income_every_ticks = int(CURRENCY_CONFIG["income_every_ticks"])
+            if income_every_ticks > 0 and game.current_tick % income_every_ticks == 0:
+                income_amount = int(CURRENCY_CONFIG["income_amount"])
+                if game.players:
+                    income_per_player = math.ceil(income_amount / len(game.players))
+                    for player in game.players:
+                        player.wallet += income_per_player
+                return self._serialize_players(game)
+
+        return []
 
     def spawn_mobs(self, game_id: str) -> list:
         """Process mob spawning based on spawner waves.

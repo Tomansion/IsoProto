@@ -133,6 +133,8 @@ export const SKYLIGHT_ASSET = {
   url: "/images/animations/Skylight.png",
 };
 
+export const COIN_ASSET_URL = "/images/coin.png";
+
 export const EXPLOSION_ANIM_FRAMERATE = 12;
 
 export const BUILDING_UI_CONFIG = {
@@ -140,13 +142,11 @@ export const BUILDING_UI_CONFIG = {
     label: "Turret",
     footprint: "3x3",
     description: "Shoots mobs",
-    buildTimeMs: 1000,
   },
   [BUILDING_TYPES.WALL]: {
     label: "Wall",
     footprint: "1x1",
     description: "Blocks paths",
-    buildTimeMs: 400,
   },
 };
 
@@ -199,6 +199,7 @@ export default {
   EXPLOSION_ASSET,
   TURRET_SPAWN_EXPLOSION_ASSET,
   SKYLIGHT_ASSET,
+  COIN_ASSET_URL,
   EXPLOSION_ANIM_FRAMERATE,
   BUILDING_UI_CONFIG,
   BUILDING_SPAWN_CONFIG,
