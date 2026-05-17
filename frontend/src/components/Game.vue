@@ -237,6 +237,25 @@ export default {
             phaserGameManager.renderPendingBuilding(message.data);
           }
           break;
+        case "map_tiles_updated":
+          if (Array.isArray(message.data) && this.map?.tiles) {
+            for (const changedTile of message.data) {
+              const { x, y, tile } = changedTile;
+              if (
+                y < 0 ||
+                x < 0 ||
+                y >= this.map.height ||
+                x >= this.map.width
+              ) {
+                continue;
+              }
+
+              this.map.tiles[y][x] = tile;
+            }
+
+            phaserGameManager.updateMapTiles(message.data);
+          }
+          break;
         case "mob_update":
           // Complete mob list update - replace the entire list
           this.mobs = message.data || [];

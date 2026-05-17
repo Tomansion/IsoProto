@@ -61,7 +61,14 @@ class GameConnectionManager:
                 game_manager.tick_game(game_id)
 
                 # Finalize turret builds whose cooldown has ended
-                built_buildings = game_manager.process_pending_buildings(game_id)
+                built_buildings, changed_tiles = game_manager.process_pending_buildings(
+                    game_id
+                )
+                if changed_tiles:
+                    await self.broadcast_game(
+                        game_id,
+                        {"type": "map_tiles_updated", "data": changed_tiles},
+                    )
                 if built_buildings:
                     await self.broadcast_game(
                         game_id,

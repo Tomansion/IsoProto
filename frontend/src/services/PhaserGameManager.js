@@ -76,6 +76,21 @@ export class PhaserGameManager {
   }
 
   /**
+   * Update map tiles without rerendering buildings.
+   * @param {Array} changedTiles - Array of tile updates {x, y, tile}
+   */
+  updateMapTiles(changedTiles) {
+    if (!this.mapScene) {
+      setTimeout(() => {
+        this.updateMapTiles(changedTiles);
+      }, 100);
+      return;
+    }
+
+    this.mapScene.updateMapTiles(changedTiles);
+  }
+
+  /**
    * Update mob sprites with the latest positions from server
    * @param {Array} mobs - Array of mob data {id, x, y, hp, mob_type, elevation}
    */

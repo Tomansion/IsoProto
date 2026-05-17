@@ -11,9 +11,9 @@
 ✔ Zoom in/out phone @done(26-05-06 00:07)
 ✔ turret Spawn animation: drop from the sky, add boom landing @done(26-05-15 01:56)
 ✔ Be able to place walls @done(26-05-17 13:15)
+✔ Fix mobs going through walls when they are placed diagonally @done(26-05-17 13:38)
+✔ Make that contstructions destroy trees @done(26-05-17 13:57)
 
-☐ Fix mobs going through walls when they are placed diagonally
-☐ Make that contstructions destroy trees
 ☐ Add currency
 ☐ Fix building elevation by placing structure blocks bellow them
 ☐ Auto refresh websocket when connection lost

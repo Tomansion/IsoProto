@@ -23,6 +23,7 @@ export class TileManager {
     this.scene = scene;
     this.layerManager = layerManager;
     this.tiles = [];
+    this.tileSprites = new Map();
     this.tileClickCallback = null;
     this.dragChecker = null;
     this.pointerStartX = null;
@@ -55,31 +56,56 @@ export class TileManager {
 
     const { tiles, elevation, width, height } = mapData;
 
-    let groundCount = 0;
-    let treeCount = 0;
-
     // Iterate through each tile in the map
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        const tileType = tiles[y][x];
-        const tileElevation = elevation && elevation[y] ? elevation[y][x] : 0;
-
-        // Always render ground tile
-        this.renderGroundTile(
-          x,
-          y,
-          tileElevation,
-          tileType !== TILE_TREE && tileElevation > 0,
-        );
-        groundCount++;
-
-        // Render tree if present
-        if (tileType === TILE_TREE) {
-          this.renderTreeTile(x, y, tileElevation);
-          treeCount++;
-        }
+        this.renderTileAt(mapData, x, y);
       }
     }
+  }
+
+  /**
+   * Update only changed tiles without redrawing the full map.
+   * @param {object} mapData - Full map data from backend
+   * @param {Array} changedTiles - Array of tile updates {x, y, tile}
+   */
+  updateTiles(mapData, changedTiles) {
+    if (!mapData || !Array.isArray(changedTiles) || changedTiles.length === 0) {
+      return;
+    }
+
+    for (const changedTile of changedTiles) {
+      const { x, y } = changedTile;
+      this.clearTileAt(x, y);
+      this.renderTileAt(mapData, x, y);
+    }
+  }
+
+  getTileKey(x, y) {
+    return `${x},${y}`;
+  }
+
+  renderTileAt(mapData, x, y) {
+    const tileType = mapData.tiles[y][x];
+    const tileElevation =
+      mapData.elevation && mapData.elevation[y] ? mapData.elevation[y][x] : 0;
+
+    const groundSprite = this.renderGroundTile(
+      x,
+      y,
+      tileElevation,
+      tileElevation > 0,
+    );
+    let treeSprite = null;
+
+    if (tileType === TILE_TREE) {
+      treeSprite = this.renderTreeTile(x, y, tileElevation);
+    }
+
+    this.tileSprites.set(this.getTileKey(x, y), {
+      groundSprite,
+      treeSprite,
+    });
   }
 
   /**
@@ -147,6 +173,7 @@ export class TileManager {
     }
 
     this.tiles.push(sprite);
+    return sprite;
   }
 
   /**
@@ -173,6 +200,30 @@ export class TileManager {
     sprite.setScale(TILE_SIZE / 32);
 
     this.tiles.push(sprite);
+    return sprite;
+  }
+
+  destroyTileSprite(sprite) {
+    if (!sprite) {
+      return;
+    }
+
+    sprite.off("pointerdown");
+    sprite.off("pointerup");
+    sprite.destroy();
+
+    this.tiles = this.tiles.filter((tile) => tile !== sprite);
+  }
+
+  clearTileAt(x, y) {
+    const tileEntry = this.tileSprites.get(this.getTileKey(x, y));
+    if (!tileEntry) {
+      return;
+    }
+
+    this.destroyTileSprite(tileEntry.groundSprite);
+    this.destroyTileSprite(tileEntry.treeSprite);
+    this.tileSprites.delete(this.getTileKey(x, y));
   }
 
   /**
@@ -187,6 +238,7 @@ export class TileManager {
       }
     });
     this.tiles = [];
+    this.tileSprites.clear();
   }
 
   /**

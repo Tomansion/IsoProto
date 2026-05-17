@@ -254,6 +254,32 @@ export class MapScene extends Phaser.Scene {
   }
 
   /**
+   * Update map tile types and rerender tiles without touching buildings.
+   * @param {Array} changedTiles - Array of tile updates {x, y, tile}
+   */
+  updateMapTiles(changedTiles) {
+    if (!this.mapData || !Array.isArray(changedTiles) || changedTiles.length === 0) {
+      return;
+    }
+
+    for (const changedTile of changedTiles) {
+      const { x, y, tile } = changedTile;
+      if (
+        y < 0 ||
+        x < 0 ||
+        y >= this.mapData.height ||
+        x >= this.mapData.width
+      ) {
+        continue;
+      }
+
+      this.mapData.tiles[y][x] = tile;
+    }
+
+    this.tileManager.updateTiles(this.mapData, changedTiles);
+  }
+
+  /**
    * Update mob sprites with the latest positions from server.
    * @param {Array} mobs - Array of mob data {id, x, y, hp, mob_type, elevation}
    */

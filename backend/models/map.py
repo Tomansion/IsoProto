@@ -1,7 +1,7 @@
 """Map model for game maps."""
 
 import uuid
-from config import MAP_SIZE, MAP_CENTER, BASE_RADIUS
+from config import BASE_RADIUS, MAP_CENTER, MAP_SIZE, TILE_EMPTY, TILE_TREE
 from services.map_generator import MapGenerator
 from typing import List, Optional
 
@@ -79,6 +79,24 @@ class Map:
             x=MAP_CENTER, y=MAP_CENTER, building_id=0, building_type="base"
         )
         self.buildings.append(base_building)
+
+    def clear_trees_at_tiles(self, tiles: List[tuple[int, int]]) -> List[dict]:
+        """Remove trees from the provided tiles and return changed tile data."""
+        changed_tiles = []
+        seen_tiles = set()
+
+        for x, y in tiles:
+            if (x, y) in seen_tiles:
+                continue
+            seen_tiles.add((x, y))
+
+            if self.tiles[y][x] != TILE_TREE:
+                continue
+
+            self.tiles[y][x] = TILE_EMPTY
+            changed_tiles.append({"x": x, "y": y, "tile": TILE_EMPTY})
+
+        return changed_tiles
 
     def to_dict(self) -> dict:
         """Convert map to dictionary for serialization."""

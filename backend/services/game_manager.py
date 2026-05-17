@@ -6,7 +6,7 @@ from models.player import Player
 from models.map import Building
 from models.turret import Turret
 from models.mob import Zombie
-from config import TILE_TREE, BUILDING_TYPE_CONFIG
+from config import BUILDING_TYPE_CONFIG
 
 
 class GameManager:
@@ -188,9 +188,6 @@ class GameManager:
             if map_obj.elevation[tile_y][tile_x] <= 0:
                 return False
 
-            if map_obj.tiles[tile_y][tile_x] == TILE_TREE:
-                return False
-
         requested_tiles = set(building_tiles)
 
         for building in map_obj.buildings:
@@ -220,7 +217,7 @@ class GameManager:
     def queue_building_build(
         self, game_id: str, player_id: str, x: int, y: int, building_type: str
     ) -> Optional[dict]:
-        """Queue a building build and return the pending placement payload."""
+        """Queue a building build and return the pending payload."""
         game = self.games.get(game_id)
         building_config = BUILDING_TYPE_CONFIG.get(building_type)
         if not game or not building_config:
@@ -351,13 +348,14 @@ class GameManager:
 
         return self._create_turret(game, player_id, x, y)
 
-    def process_pending_buildings(self, game_id: str) -> list:
+    def process_pending_buildings(self, game_id: str) -> tuple[list, List[dict]]:
         """Finalize pending building builds whose cooldown has completed."""
         game = self.games.get(game_id)
         if not game or not game.pending_buildings:
-            return []
+            return ([], [])
 
         ready_buildings = []
+        changed_tiles = []
         still_pending = []
 
         for pending_building in game.pending_buildings:
@@ -374,6 +372,14 @@ class GameManager:
             ):
                 continue
 
+            building_tiles = self._get_building_tiles(
+                game,
+                pending_building["x"],
+                pending_building["y"],
+                pending_building["building_type"],
+            )
+            changed_tiles.extend(game.map.clear_trees_at_tiles(building_tiles))
+
             building = self._create_building(
                 game,
                 pending_building["player_id"],
@@ -385,11 +391,12 @@ class GameManager:
             ready_buildings.append(building.to_dict())
 
         game.pending_buildings = still_pending
-        return ready_buildings
+        return (ready_buildings, changed_tiles)
 
     def process_pending_turrets(self, game_id: str) -> list:
         """Backward-compatible wrapper for pending turret processing."""
-        return self.process_pending_buildings(game_id)
+        ready_buildings, _ = self.process_pending_buildings(game_id)
+        return ready_buildings
 
     def tick_turrets(self, game_id: str) -> tuple:
         """Update all turrets to track closest mobs and fire when ready.
