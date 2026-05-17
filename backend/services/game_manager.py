@@ -327,6 +327,28 @@ class GameManager:
             self._create_building(game, player_id, x, y, "turret", id=id),
         )
 
+    def _kill_mobs_on_tiles(
+        self, game: Game, building_tiles: List[tuple[int, int]]
+    ) -> List[str]:
+        """Kill mobs standing on the provided tiles and return their ids."""
+        occupied_tiles = set(building_tiles)
+        surviving_mobs = []
+        dead_mob_ids = []
+
+        for mob in game.mobs:
+            mob_tile = (round(mob.x), round(mob.y))
+            if mob_tile in occupied_tiles:
+                mob.hp = 0
+                if mob.pathfinding_manager:
+                    mob.pathfinding_manager.reached_target(mob.id)
+                dead_mob_ids.append(mob.id)
+                continue
+
+            surviving_mobs.append(mob)
+
+        game.mobs = surviving_mobs
+        return dead_mob_ids
+
     def add_turret_to_game(
         self, game_id: str, player_id: str, x: int, y: int
     ) -> Optional[Turret]:
@@ -348,14 +370,17 @@ class GameManager:
 
         return self._create_turret(game, player_id, x, y)
 
-    def process_pending_buildings(self, game_id: str) -> tuple[list, List[dict]]:
+    def process_pending_buildings(
+        self, game_id: str
+    ) -> tuple[list, List[dict], List[str]]:
         """Finalize pending building builds whose cooldown has completed."""
         game = self.games.get(game_id)
         if not game or not game.pending_buildings:
-            return ([], [])
+            return ([], [], [])
 
         ready_buildings = []
         changed_tiles = []
+        dead_mob_ids = []
         still_pending = []
 
         for pending_building in game.pending_buildings:
@@ -379,6 +404,7 @@ class GameManager:
                 pending_building["building_type"],
             )
             changed_tiles.extend(game.map.clear_trees_at_tiles(building_tiles))
+            dead_mob_ids.extend(self._kill_mobs_on_tiles(game, building_tiles))
 
             building = self._create_building(
                 game,
@@ -391,11 +417,11 @@ class GameManager:
             ready_buildings.append(building.to_dict())
 
         game.pending_buildings = still_pending
-        return (ready_buildings, changed_tiles)
+        return (ready_buildings, changed_tiles, dead_mob_ids)
 
     def process_pending_turrets(self, game_id: str) -> list:
         """Backward-compatible wrapper for pending turret processing."""
-        ready_buildings, _ = self.process_pending_buildings(game_id)
+        ready_buildings, _, _ = self.process_pending_buildings(game_id)
         return ready_buildings
 
     def tick_turrets(self, game_id: str) -> tuple:
