@@ -434,6 +434,7 @@ export class BuildingManager {
     beamSprite.setOrigin(0.5, 1);
     beamSprite.setDepth(depth);
     beamSprite.setAlpha(0.75);
+    beamSprite.setScale(spawnConfig.beamScale || 1);
 
     const alphaTween = this.scene.tweens.add({
       targets: beamSprite,
