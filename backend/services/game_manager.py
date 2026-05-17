@@ -287,6 +287,9 @@ class GameManager:
                 building_id=building_config.get("building_id", 0),
                 player_id=player_id,
                 orientation=orientation,
+                targetable_environments=building_config.get(
+                    "targetable_environments"
+                ),
                 id=id,
             )
             building.update_target(game.mobs, game.current_tick)

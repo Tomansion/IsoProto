@@ -1,8 +1,9 @@
 """Turret model for defensive buildings."""
 
 import math
-from typing import List, Optional
+from typing import Dict, List, Optional
 from models.map import Building
+from models.mob import Mob
 
 
 class Turret(Building):
@@ -21,6 +22,7 @@ class Turret(Building):
         rotation_speed: float = 0.5,  # Rotations per tick (0-1 = partial, >1 = multiple per tick)
         damage: int = 30,
         fire_cooldown: int = 10,
+        targetable_environments: Optional[Dict[str, bool]] = None,
     ):
         super().__init__(
             x=x,
@@ -46,11 +48,24 @@ class Turret(Building):
         self.fire_cooldown = fire_cooldown or turret_config.get(
             "fire_cooldown", 10
         )  # Ticks between shots
+        self.targetable_environments = targetable_environments or {
+            "tree": False,
+            "water": True,
+            "ground": True,
+        }
         self.current_angle = orientation * (2 * math.pi / 8)  # Current angle in radians
         self.idle_duration = 60  # Ticks before choosing new idle direction
         self.idle_timer = self.idle_duration  # Counter for idle rotation
         self.idle_target_angle = None  # Target angle when idle
         self.last_shot_tick = 0  # Track when last shot was fired
+
+    def can_target_mob(self, mob: Mob) -> bool:
+        """Return whether this turret is allowed to target the mob's environment."""
+        environment = "ground"
+        if hasattr(mob, "get_environment_type"):
+            environment = mob.get_environment_type()
+
+        return self.targetable_environments.get(environment, False)
 
     def update_target(self, mobs: List, current_tick: int = 0) -> tuple:
         """Update turret to target the closest mob within range, rotate toward it, and fire if aimed.
@@ -81,6 +96,8 @@ class Turret(Building):
 
             # Only consider mobs within range
             if distance > self.range:
+                continue
+            if not self.can_target_mob(mob):
                 continue
 
             if distance < closest_distance:

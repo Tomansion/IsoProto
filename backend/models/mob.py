@@ -3,6 +3,7 @@
 import uuid
 import math
 from typing import Dict, Tuple
+from config import TILE_TREE
 from services.pathfinding_manager import PathfindingManager
 
 
@@ -80,7 +81,7 @@ class Mob:
         ty = max(0, min(self.map_obj.height - 1, round(self.y)))
 
         # Check if there's a tree at this location
-        if self.map_obj.tiles[ty][tx] == 1:  # TILE_TREE
+        if self.map_obj.tiles[ty][tx] == TILE_TREE:
             return self.terrain_multipliers.get("tree", 1.0)
 
         # Check if it's water (elevation <= 0)
@@ -88,6 +89,22 @@ class Mob:
             return self.terrain_multipliers.get("water", 1.0)
 
         return self.terrain_multipliers.get("default", 1.0)
+
+    def get_environment_type(self) -> str:
+        """Return the terrain type currently occupied by the mob."""
+        if not self.map_obj:
+            return "ground"
+
+        tx = max(0, min(self.map_obj.width - 1, round(self.x)))
+        ty = max(0, min(self.map_obj.height - 1, round(self.y)))
+
+        if self.map_obj.tiles[ty][tx] == TILE_TREE:
+            return "tree"
+
+        if self.map_obj.elevation[ty][tx] <= 0:
+            return "water"
+
+        return "ground"
 
     def _calculate_orientation(self, dx: float, dy: float) -> int:
         """Calculate orientation (0-7) from movement direction in isometric space.

@@ -13,6 +13,7 @@
 ✔ Be able to place walls @done(26-05-17 13:15)
 ✔ Fix mobs going through walls when they are placed diagonally @done(26-05-17 13:38)
 ✔ Make that contstructions destroy trees @done(26-05-17 13:57)
+✔ Make the mob not visible when behind a tree @done(26-05-17 14:13)
 
 ☐ Add currency
 ☐ Fix building elevation by placing structure blocks bellow them
@@ -28,4 +29,4 @@
 ☐ Place players cursor
 ☐ Display available turret placement
 ☐ Display turret range 
-☐ Make the mob not visible when behind a tree
+☐ Fix mob spawning on buildings when they are placed on the edge of the map

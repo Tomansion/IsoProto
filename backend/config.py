@@ -66,6 +66,11 @@ BUILDING_TYPE_CONFIG = {
         "build_cooldown_ticks": int(1 / GAME_TICK_SECONDS),
         "building_id": 0,
         "blocks_path": True,
+        "targetable_environments": {
+            "tree": False,
+            "water": True,
+            "ground": True,
+        },
     },
     "wall": {
         "footprint_radius": 0,
