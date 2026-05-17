@@ -210,7 +210,7 @@ class Mob:
         """Serialize mob to dictionary for WS broadcasting."""
         # Check if in water (elevation <= 0)
         is_in_water = self.elevation <= 0
-        
+
         return {
             "id": self.id,
             "x": round(self.x, 3),

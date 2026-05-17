@@ -26,7 +26,7 @@ class Game:
         self.players: List[Player] = []
         self.nb_players = 0
         self.mobs: List[Zombie] = []
-        self.pending_turrets: List[Dict] = []
+        self.pending_buildings: List[Dict] = []
         self.current_tick = 0  # Game tick counter for synchronization
         if seed is None:
             seed = random.randint(0, 2**31 - 1)
@@ -47,7 +47,7 @@ class Game:
             "created_at": self.created_at,
             "nb_players": self.nb_players,
             "players": [p.to_dict() for p in self.players],
-            "pending_turrets": self.pending_turrets,
+            "pending_buildings": self.pending_buildings,
             "map": self.map.to_dict(),
         }
 
@@ -62,7 +62,9 @@ class Game:
         )
         game.nb_players = data.get("nb_players", 0)
         game.players = [Player.from_dict(p) for p in data.get("players", [])]
-        game.pending_turrets = data.get("pending_turrets", [])
+        game.pending_buildings = data.get(
+            "pending_buildings", data.get("pending_turrets", [])
+        )
         if "map" in data:
             game.map = Map.from_dict(data["map"])
         return game

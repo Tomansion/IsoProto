@@ -7,6 +7,7 @@ when terrain changes or the mob diverges too far from the expected path.
 
 from typing import Dict, List, Tuple, Set
 from services.simple_pathfinder import SimplePathfinder
+from config import BUILDING_TYPE_CONFIG
 
 
 class PathfindingManager:
@@ -35,14 +36,17 @@ class PathfindingManager:
         self.blocked_tiles.clear()
 
         for building in buildings:
-            if building.building_type == "turret":
-                # Block the turret tile and surrounding 3x3 area
-                for dx in [-1, 0, 1]:
-                    for dy in [-1, 0, 1]:
-                        x = building.x + dx
-                        y = building.y + dy
-                        if 0 <= x < self.map.width and 0 <= y < self.map.height:
-                            self.blocked_tiles.add((x, y))
+            building_config = BUILDING_TYPE_CONFIG.get(building.building_type, {})
+            if not building_config.get("blocks_path", False):
+                continue
+
+            footprint_radius = building_config.get("footprint_radius", 0)
+            for dx in range(-footprint_radius, footprint_radius + 1):
+                for dy in range(-footprint_radius, footprint_radius + 1):
+                    x = building.x + dx
+                    y = building.y + dy
+                    if 0 <= x < self.map.width and 0 <= y < self.map.height:
+                        self.blocked_tiles.add((x, y))
 
         # Return newly blocked tiles
         return list(self.blocked_tiles - self.previously_blocked_tiles)

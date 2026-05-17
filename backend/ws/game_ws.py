@@ -61,11 +61,11 @@ class GameConnectionManager:
                 game_manager.tick_game(game_id)
 
                 # Finalize turret builds whose cooldown has ended
-                built_turrets = game_manager.process_pending_turrets(game_id)
-                if built_turrets:
+                built_buildings = game_manager.process_pending_buildings(game_id)
+                if built_buildings:
                     await self.broadcast_game(
                         game_id,
-                        {"type": "turret_placed", "data": built_turrets},
+                        {"type": "building_placed", "data": built_buildings},
                     )
 
                 # Spawn new mobs from waves
@@ -222,7 +222,7 @@ async def websocket_endpoint(
                 "timestamp": datetime.utcnow().isoformat(),
                 "map": game.map.to_dict(),
                 "mobs": [m.to_dict() for m in game.mobs],
-                "pending_turrets": game.pending_turrets,
+                "pending_buildings": game.pending_buildings,
             }
         )
 
@@ -270,11 +270,12 @@ async def websocket_endpoint(
             if message.get("type") == "player_action":
                 action_type = message.get("action_type")
 
-                # Handle turret placement
-                if action_type == "place_turret":
+                # Handle building placement
+                if action_type in {"place_building"}:
                     action_data = message.get("data", {})
                     x = action_data.get("x")
                     y = action_data.get("y")
+                    building_type = action_data.get("building_type", "turret")
 
                     # Get the current game and player
                     game = game_manager.get_game(game_id)
@@ -288,19 +289,19 @@ async def websocket_endpoint(
                     if player is None:
                         continue
 
-                    # Attempt to place turret
-                    pending_turret = game_manager.queue_turret_build(
-                        game_id, player.id, x, y
+                    # Attempt to place building
+                    pending_building = game_manager.queue_building_build(
+                        game_id, player.id, x, y, building_type
                     )
 
-                    if pending_turret:
-                        # Broadcast turret build start to all players in game
+                    if pending_building:
+                        # Broadcast building build start to all players in game
                         await manager.broadcast_game(
                             game_id,
                             {
-                                "type": "turret_build_started",
+                                "type": "building_build_started",
                                 "player": player_name,
-                                "data": pending_turret,
+                                "data": pending_building,
                             },
                         )
                     else:
@@ -308,8 +309,12 @@ async def websocket_endpoint(
                         await websocket.send_json(
                             {
                                 "type": "action_error",
-                                "message": "Cannot place turret at this location",
-                                "data": {"x": x, "y": y},
+                                "message": f"Cannot place {building_type} at this location",
+                                "data": {
+                                    "x": x,
+                                    "y": y,
+                                    "building_type": building_type,
+                                },
                             }
                         )
                 else:

@@ -27,14 +27,14 @@ TILE_TREE = 1
 
 # Mob spawning configuration
 MOB_SPAWN_CONFIG = {
-    "initial_wave_size": 10,      # Number of mobs in the first wave
-    "wave_increment": 5,           # Additional mobs per subsequent wave
-    "wave_delay_ticks": 100,       # Game ticks between spawning waves (0.1s per tick)
-    "spawn_rate_ticks": 5,         # Game ticks between spawning individual mobs in a sequence
-    "max_mobs": 200,               # Maximum concurrent mobs on the map
-    "border_distance": 2,          # Distance from map edge where mobs spawn
-    "spawn_spread": 5,             # Random offset along the edge for each mob (±N)
-    "total_waves": 20,             # Total number of waves to spawn
+    "initial_wave_size": 10,  # Number of mobs in the first wave
+    "wave_increment": 5,  # Additional mobs per subsequent wave
+    "wave_delay_ticks": 100,  # Game ticks between spawning waves (0.1s per tick)
+    "spawn_rate_ticks": 5,  # Game ticks between spawning individual mobs in a sequence
+    "max_mobs": 200,  # Maximum concurrent mobs on the map
+    "border_distance": 0,  # Distance from map edge where mobs spawn
+    "spawn_spread": 5,  # Random offset along the edge for each mob (±N)
+    "total_waves": 20,  # Total number of waves to spawn
 }
 
 # Mob type configurations
@@ -58,8 +58,30 @@ MOB_TYPE_CONFIG = {
 
 # Game timing
 GAME_TICK_SECONDS = 0.1
-TURRET_BUILD_COOLDOWN_SECONDS = 1
-TURRET_BUILD_COOLDOWN_TICKS = int(TURRET_BUILD_COOLDOWN_SECONDS / GAME_TICK_SECONDS)
+
+BUILDING_TYPE_CONFIG = {
+    "turret": {
+        "footprint_radius": 1,
+        "build_cooldown_seconds": 1,
+        "build_cooldown_ticks": int(1 / GAME_TICK_SECONDS),
+        "building_id": 0,
+        "blocks_path": True,
+    },
+    "wall": {
+        "footprint_radius": 0,
+        "build_cooldown_seconds": 0.4,
+        "build_cooldown_ticks": int(0.4 / GAME_TICK_SECONDS),
+        "building_id": 0,
+        "blocks_path": True,
+    },
+    "base": {
+        "footprint_radius": 0,
+        "build_cooldown_seconds": 0,
+        "build_cooldown_ticks": 0,
+        "building_id": 0,
+        "blocks_path": False,
+    },
+}
 
 # Turret type configurations
 TURRET_TYPE_CONFIG = {

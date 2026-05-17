@@ -19,6 +19,12 @@ export const building_id = {
   BASE: 0,
 };
 
+export const BUILDING_TYPES = {
+  BASE: "base",
+  TURRET: "turret",
+  WALL: "wall",
+};
+
 // Tile size in pixels
 export const TILE_SIZE = 32;
 
@@ -60,6 +66,13 @@ export const TURRET_SHEET_ASSET = {
   url: "/images/turrets-sheet.png",
   frameWidth: 32 * 5,
   frameHeight: 32 * 5,
+};
+
+export const WALL_ASSET = {
+  key: "wall",
+  url: "/images/wall.png",
+  width: 64,
+  height: 64,
 };
 
 // Turret frame mapping: orientation -> head sprite frame (base is always 0)
@@ -114,17 +127,54 @@ export const TURRET_SPAWN_EXPLOSION_ASSET = {
   frameRate: 10,
 };
 
-export const TURRET_SPAWN_DROP_DURATION = 38;
-export const TURRET_SPAWN_DROP_HEIGHT = 500;
-export const TURRET_SPAWN_DROP_STRETCH_Y = 2;
-export const TURRET_SPAWN_BLUR_LAYERS = 1;
-
 export const SKYLIGHT_ASSET = {
   key: "skylight",
   url: "/images/animations/Skylight.png",
 };
 
 export const EXPLOSION_ANIM_FRAMERATE = 12;
+
+export const BUILDING_UI_CONFIG = {
+  [BUILDING_TYPES.TURRET]: {
+    label: "Turret",
+    footprint: "3x3",
+    description: "Shoots mobs",
+    buildTimeMs: 1000,
+  },
+  [BUILDING_TYPES.WALL]: {
+    label: "Wall",
+    footprint: "1x1",
+    description: "Blocks paths",
+    buildTimeMs: 400,
+  },
+};
+
+export const BUILDING_SPAWN_CONFIG = {
+  [BUILDING_TYPES.TURRET]: {
+    pendingOffsetX: 1,
+    pendingOffsetY: 1,
+    pendingDepthBoost: 25000,
+    dropDuration: 38,
+    dropHeight: 500,
+    stretchY: 2,
+    blurLayers: 1,
+    blurSpacing: 48,
+    explosionScale: 5,
+    explosionOriginY: 0.8,
+  },
+  [BUILDING_TYPES.WALL]: {
+    pendingOffsetX: 0,
+    pendingOffsetY: 0,
+    pendingDepthBoost: 18000,
+    dropDuration: 28,
+    dropHeight: 220,
+    stretchY: 3,
+    blurLayers: 2,
+    blurSpacing: 24,
+    explosionScale: 2,
+    explosionOriginY: 0.82,
+  },
+};
 
 export default {
   TILE_EMPTY,
@@ -136,16 +186,16 @@ export default {
   TILESET_ASSET,
   BUILDING_SHEET_ASSET,
   TURRET_SHEET_ASSET,
+  WALL_ASSET,
   TURRET_FRAMES,
   TURRET_SHOT_FRAMES,
+  BUILDING_TYPES,
   ZOMBIE_ASSET,
   ZOMBIE_ANIM_FRAMERATE,
   EXPLOSION_ASSET,
   TURRET_SPAWN_EXPLOSION_ASSET,
-  TURRET_SPAWN_DROP_DURATION,
-  TURRET_SPAWN_DROP_HEIGHT,
-  TURRET_SPAWN_DROP_STRETCH_Y,
-  TURRET_SPAWN_BLUR_LAYERS,
   SKYLIGHT_ASSET,
   EXPLOSION_ANIM_FRAMERATE,
+  BUILDING_UI_CONFIG,
+  BUILDING_SPAWN_CONFIG,
 };

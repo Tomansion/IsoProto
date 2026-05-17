@@ -10,14 +10,13 @@ import {
 import {
   BUILDING_SHEET_ASSET,
   TURRET_SHEET_ASSET,
+  WALL_ASSET,
+  BUILDING_TYPES,
   TURRET_FRAMES,
   TURRET_SHOT_FRAMES,
   EXPLOSION_ASSET,
   TURRET_SPAWN_EXPLOSION_ASSET,
-  TURRET_SPAWN_DROP_DURATION,
-  TURRET_SPAWN_DROP_HEIGHT,
-  TURRET_SPAWN_DROP_STRETCH_Y,
-  TURRET_SPAWN_BLUR_LAYERS,
+  BUILDING_SPAWN_CONFIG,
   SKYLIGHT_ASSET,
 } from "../../config/mapConfig.js";
 
@@ -25,12 +24,11 @@ export class BuildingManager {
   constructor(scene) {
     this.scene = scene;
     this.buildings = [];
-    this.turrets = []; // Track turrets separately (each is {baseSprite, headSprite})
-    this.pendingTurretEffects = new Map();
+    this.pendingBuildingEffects = new Map();
   }
 
   /**
-   * Load building and turret spritesheet assets
+   * Load building assets.
    */
   loadAssets() {
     if (!this.scene.textures.exists(BUILDING_SHEET_ASSET.key)) {
@@ -55,14 +53,30 @@ export class BuildingManager {
       );
     }
 
+    if (!this.scene.textures.exists(WALL_ASSET.key)) {
+      this.scene.load.image(WALL_ASSET.key, WALL_ASSET.url);
+    }
+
     if (!this.scene.textures.exists(SKYLIGHT_ASSET.key)) {
       this.scene.load.image(SKYLIGHT_ASSET.key, SKYLIGHT_ASSET.url);
     }
   }
 
   /**
-   * Render all buildings from map data
-   * @param {object} mapData - Map data from backend {buildings: [{id, x, y, building_id, elevation}, ...]}
+   * Get spawn visuals for a building type.
+   * @param {string} buildingType
+   * @returns {object}
+   */
+  getSpawnConfig(buildingType) {
+    return (
+      BUILDING_SPAWN_CONFIG[buildingType] ||
+      BUILDING_SPAWN_CONFIG[BUILDING_TYPES.TURRET]
+    );
+  }
+
+  /**
+   * Render all buildings from map data.
+   * @param {object} mapData
    */
   renderBuildings(mapData) {
     const buildingsData = mapData.buildings;
@@ -73,32 +87,39 @@ export class BuildingManager {
       return;
     }
 
-    // Render each building
     for (const building of buildingsData) {
-      // Check building type and render accordingly
-      if (building.building_type === "turret") {
-        this.renderTurret(building, mapData, { playSpawnEffect: false });
-      } else {
-        this.renderBuilding(building, mapData);
-      }
+      this.renderBuilding(building, mapData, { playSpawnEffect: false });
     }
   }
 
   /**
-   * Render a single building
-   * @param {object} building - Building data {id, x, y, building_id, elevation}
-   * @param {object} mapData - Map data from backend {width, height, tiles, elevation, buildings}
+   * Render a building using its type.
+   * @param {object} building
+   * @param {object} mapData
+   * @param {object} options
    */
-  renderBuilding(building, mapData) {
+  renderBuilding(building, mapData, { playSpawnEffect = false } = {}) {
+    switch (building.building_type) {
+      case BUILDING_TYPES.TURRET:
+        return this.renderTurret(building, mapData, { playSpawnEffect });
+      case BUILDING_TYPES.WALL:
+        return this.renderWall(building, mapData, { playSpawnEffect });
+      default:
+        return this.renderBaseBuilding(building, mapData);
+    }
+  }
+
+  /**
+   * Render a base building from the building sheet.
+   * @param {object} building
+   * @param {object} mapData
+   */
+  renderBaseBuilding(building, mapData) {
     const { x, y, building_id, id } = building;
     const elevation = mapData.elevation[y][x];
-
-    // Convert to isometric coordinates
-    // Buildings are 96x96 px (3x3 tiles), offset them to sit on the ground properly
     const iso = cartesianToIsometric(x - 2, y - 2, elevation);
-    const depth = getDepthForTile(x + 10, y + 10); // Higher depth than trees
+    const depth = getDepthForTile(x + 10, y + 10);
 
-    // Create sprite
     const sprite = this.scene.add.sprite(
       iso.screenX,
       iso.screenY,
@@ -107,31 +128,67 @@ export class BuildingManager {
     );
     sprite.setDepth(depth);
     sprite.setOrigin(0.5, 0.5);
-    sprite.setScale(96 / BUILDING_SHEET_ASSET.frameWidth); // Scale to 96px
-
-    // Store building reference
+    sprite.setScale(96 / BUILDING_SHEET_ASSET.frameWidth);
     sprite.buildingId = id;
+    sprite.buildingType = building.building_type;
+
     this.buildings.push(sprite);
+    return sprite;
   }
 
   /**
-   * Render a single turret with base and head sprites
-   * @param {object} turret - Turret data {id, x, y, building_type, orientation, player_id}
-   * @param {object} mapData - Map data from backend {width, height, tiles, elevation, buildings}
+   * Render a wall.
+   * @param {object} wall
+   * @param {object} mapData
+   * @param {object} options
+   */
+  renderWall(wall, mapData, { playSpawnEffect = false } = {}) {
+    const { x, y, id } = wall;
+    const elevation = mapData.elevation[y][x];
+
+    this.removePendingBuilding(id, { immediate: playSpawnEffect });
+
+    const iso = cartesianToIsometric(x, y, elevation);
+    const wallY = iso.screenY - 8;
+    const depth = getDepthForTile(x, y) + 5000;
+
+    const wallSprite = this.scene.add.image(iso.screenX, wallY, WALL_ASSET.key);
+    wallSprite.setDepth(depth);
+    wallSprite.setOrigin(0.5, 0.78);
+    wallSprite.buildingId = id;
+    wallSprite.buildingType = BUILDING_TYPES.WALL;
+
+    this.buildings.push(wallSprite);
+
+    if (playSpawnEffect) {
+      wallSprite.setAlpha(0);
+      this.playWallSpawnSequence({
+        wallSprite,
+        screenX: iso.screenX,
+        screenY: wallY,
+        depth: depth + 1,
+      });
+    }
+
+    return wallSprite;
+  }
+
+  /**
+   * Render a turret with base and head sprites.
+   * @param {object} turret
+   * @param {object} mapData
+   * @param {object} options
    */
   renderTurret(turret, mapData, { playSpawnEffect = false } = {}) {
     const { x, y, id, orientation } = turret;
     const elevation = mapData.elevation[y][x];
 
-    this.removePendingTurret(id, { immediate: playSpawnEffect });
+    this.removePendingBuilding(id, { immediate: playSpawnEffect });
 
-    // Convert to isometric coordinates
-    // Turrets are 96x96 px (3x3 tiles), offset them to sit on the ground properly
     const iso = cartesianToIsometric(x - 2, y - 2, elevation);
     const baseDepth = getDepthForTile(x + 10, y + 10);
-    const headDepth = baseDepth + 1; // Head always in front of base
+    const headDepth = baseDepth + 1;
 
-    // Create turret base sprite (always frame 0)
     const baseSprite = this.scene.add.sprite(
       iso.screenX,
       iso.screenY,
@@ -140,8 +197,9 @@ export class BuildingManager {
     );
     baseSprite.setDepth(baseDepth);
     baseSprite.setOrigin(0.5, 0.5);
+    baseSprite.turretId = id;
+    baseSprite.buildingType = BUILDING_TYPES.TURRET;
 
-    // Create turret head sprite (rotates based on orientation)
     const headFrame = TURRET_FRAMES[orientation] || TURRET_FRAMES[0];
     const headSprite = this.scene.add.sprite(
       iso.screenX,
@@ -151,15 +209,12 @@ export class BuildingManager {
     );
     headSprite.setDepth(headDepth);
     headSprite.setOrigin(0.5, 0.5);
-    // Link sprites together
-    baseSprite.turretId = id;
-    baseSprite.headSprite = headSprite;
     headSprite.turretId = id;
     headSprite.baseSprite = baseSprite;
+    headSprite.buildingType = BUILDING_TYPES.TURRET;
+    baseSprite.headSprite = headSprite;
 
-    // Store both sprites
-    this.buildings.push(baseSprite);
-    this.buildings.push(headSprite);
+    this.buildings.push(baseSprite, headSprite);
 
     if (playSpawnEffect) {
       baseSprite.setAlpha(0);
@@ -173,17 +228,50 @@ export class BuildingManager {
         depth: headDepth + 1,
       });
     }
+
+    return { baseSprite, headSprite };
   }
 
   /**
-   * Play a very fast falling turret silhouette before revealing the turret.
+   * Create a stretched ghost sprite used during spawn falling effects.
    * @param {object} options
-   * @param {Phaser.GameObjects.Sprite} options.baseSprite
-   * @param {Phaser.GameObjects.Sprite} options.headSprite
    * @param {number} options.screenX
    * @param {number} options.screenY
-   * @param {number} options.headFrame
    * @param {number} options.depth
+   * @param {number} options.alpha
+   * @param {number} options.stretchY
+   * @param {string} options.textureKey
+   * @param {number} [options.frame]
+   * @param {number} [options.originY=0.5]
+   * @param {number} [options.scaleX=1]
+   * @returns {Phaser.GameObjects.Image|Phaser.GameObjects.Sprite}
+   */
+  createGhostSprite({
+    screenX,
+    screenY,
+    depth,
+    alpha,
+    stretchY,
+    textureKey,
+    frame,
+    originY = 0.5,
+    scaleX = 1,
+  }) {
+    const sprite =
+      frame === undefined
+        ? this.scene.add.image(screenX, screenY, textureKey)
+        : this.scene.add.sprite(screenX, screenY, textureKey, frame);
+
+    sprite.setOrigin(0.5, originY);
+    sprite.setDepth(depth);
+    sprite.setAlpha(alpha);
+    sprite.setScale(scaleX, stretchY);
+    return sprite;
+  }
+
+  /**
+   * Play the falling turret spawn sequence.
+   * @param {object} options
    */
   playTurretSpawnSequence({
     baseSprite,
@@ -193,60 +281,114 @@ export class BuildingManager {
     headFrame,
     depth,
   }) {
+    const spawnConfig = this.getSpawnConfig(BUILDING_TYPES.TURRET);
     const fallSprites = [];
-    const startY = screenY - TURRET_SPAWN_DROP_HEIGHT;
+    const startY = screenY - spawnConfig.dropHeight;
 
-    for (let index = 0; index < TURRET_SPAWN_BLUR_LAYERS; index += 1) {
-      const alpha = 0.35 - index * 0.09;
-      const yOffset = index * 48;
-      const layerDepth = depth + TURRET_SPAWN_BLUR_LAYERS - index;
+    for (let index = 0; index < spawnConfig.blurLayers; index += 1) {
+      const alpha = Math.max(0.14, 0.35 - index * 0.09);
+      const yOffset = index * spawnConfig.blurSpacing;
+      const layerDepth = depth + spawnConfig.blurLayers - index;
 
-      const fallBaseSprite = this.scene.add.sprite(
-        screenX,
-        startY - yOffset,
-        TURRET_SHEET_ASSET.key,
-        TURRET_FRAMES.BASE,
+      fallSprites.push(
+        this.createGhostSprite({
+          screenX,
+          screenY: startY - yOffset,
+          depth: layerDepth,
+          alpha,
+          stretchY: spawnConfig.stretchY,
+          textureKey: TURRET_SHEET_ASSET.key,
+          frame: TURRET_FRAMES.BASE,
+          scaleX: 0.5,
+        }),
       );
-      fallBaseSprite.setOrigin(0.5, 0.5);
-      fallBaseSprite.setDepth(layerDepth);
-      fallBaseSprite.setAlpha(alpha);
-      fallBaseSprite.setScale(0.5, TURRET_SPAWN_DROP_STRETCH_Y);
-
-      const fallHeadSprite = this.scene.add.sprite(
-        screenX,
-        startY - yOffset,
-        TURRET_SHEET_ASSET.key,
-        headFrame,
+      fallSprites.push(
+        this.createGhostSprite({
+          screenX,
+          screenY: startY - yOffset,
+          depth: layerDepth + 0.1,
+          alpha,
+          stretchY: spawnConfig.stretchY,
+          textureKey: TURRET_SHEET_ASSET.key,
+          frame: headFrame,
+          scaleX: 0.5,
+        }),
       );
-      fallHeadSprite.setOrigin(0.5, 0.5);
-      fallHeadSprite.setDepth(layerDepth + 0.1);
-      fallHeadSprite.setAlpha(alpha);
-      fallHeadSprite.setScale(0.5, TURRET_SPAWN_DROP_STRETCH_Y);
-
-      fallSprites.push(fallBaseSprite, fallHeadSprite);
     }
 
     this.scene.tweens.add({
       targets: fallSprites,
       y: screenY,
-      duration: TURRET_SPAWN_DROP_DURATION,
+      duration: spawnConfig.dropDuration,
       ease: "Cubic.easeIn",
       onComplete: () => {
         fallSprites.forEach((sprite) => sprite.destroy());
         baseSprite.setAlpha(1);
         headSprite.setAlpha(1);
-        this.playTurretSpawnEffect(screenX, screenY, depth);
+        this.playBuildingSpawnEffect(
+          BUILDING_TYPES.TURRET,
+          screenX,
+          screenY,
+          depth,
+        );
       },
     });
   }
 
   /**
-   * Play the turret spawn explosion effect.
-   * @param {number} screenX - Isometric screen X position
-   * @param {number} screenY - Isometric screen Y position
-   * @param {number} depth - Render depth for the effect
+   * Play the falling wall spawn sequence.
+   * @param {object} options
    */
-  playTurretSpawnEffect(screenX, screenY, depth) {
+  playWallSpawnSequence({ wallSprite, screenX, screenY, depth }) {
+    const spawnConfig = this.getSpawnConfig(BUILDING_TYPES.WALL);
+    const fallSprites = [];
+    const startY = screenY - spawnConfig.dropHeight;
+
+    for (let index = 0; index < spawnConfig.blurLayers; index += 1) {
+      const alpha = Math.max(0.14, 0.34 - index * 0.09);
+      const yOffset = index * spawnConfig.blurSpacing;
+      const layerDepth = depth + spawnConfig.blurLayers - index;
+
+      fallSprites.push(
+        this.createGhostSprite({
+          screenX,
+          screenY: startY - yOffset,
+          depth: layerDepth,
+          alpha,
+          stretchY: spawnConfig.stretchY,
+          textureKey: WALL_ASSET.key,
+          originY: 0.78,
+        }),
+      );
+    }
+
+    this.scene.tweens.add({
+      targets: fallSprites,
+      y: screenY,
+      duration: spawnConfig.dropDuration,
+      ease: "Cubic.easeIn",
+      onComplete: () => {
+        fallSprites.forEach((sprite) => sprite.destroy());
+        wallSprite.setAlpha(1);
+        this.playBuildingSpawnEffect(
+          BUILDING_TYPES.WALL,
+          screenX,
+          screenY,
+          depth,
+        );
+      },
+    });
+  }
+
+  /**
+   * Play the spawn explosion effect for a building.
+   * @param {string} buildingType
+   * @param {number} screenX
+   * @param {number} screenY
+   * @param {number} depth
+   */
+  playBuildingSpawnEffect(buildingType, screenX, screenY, depth) {
+    const spawnConfig = this.getSpawnConfig(buildingType);
     const spawnEffect = this.scene.add.sprite(
       screenX,
       screenY,
@@ -254,9 +396,8 @@ export class BuildingManager {
       0,
     );
     spawnEffect.setDepth(depth);
-    spawnEffect.setOrigin(0.5, 0.8);
-    spawnEffect.setScale(5); // Scale up for better visibility
-
+    spawnEffect.setOrigin(0.5, spawnConfig.explosionOriginY);
+    spawnEffect.setScale(spawnConfig.explosionScale);
     spawnEffect.play("turret-spawn-explosion");
     spawnEffect.on("animationcomplete", () => {
       spawnEffect.destroy();
@@ -264,21 +405,26 @@ export class BuildingManager {
   }
 
   /**
-   * Render the temporary beam shown while a turret is building.
-   * @param {object} pendingTurret - Pending turret data {id, x, y, elevation}
+   * Render the temporary skylight shown while a building is being built.
+   * @param {object} pendingBuilding
    */
-  renderPendingTurret(pendingTurret) {
-    if (!pendingTurret || this.pendingTurretEffects.has(pendingTurret.id)) {
+  renderPendingBuilding(pendingBuilding) {
+    if (
+      !pendingBuilding ||
+      this.pendingBuildingEffects.has(pendingBuilding.id)
+    ) {
       return;
     }
 
+    const spawnConfig = this.getSpawnConfig(pendingBuilding.building_type);
     const { screenX, screenY } = cartesianToIsometric(
-      pendingTurret.x + 1,
-      pendingTurret.y + 1,
-      pendingTurret.elevation || 0,
+      pendingBuilding.x + spawnConfig.pendingOffsetX,
+      pendingBuilding.y + spawnConfig.pendingOffsetY,
+      pendingBuilding.elevation || 0,
     );
     const depth =
-      getDepthForTile(pendingTurret.x, pendingTurret.y) + 25000;
+      getDepthForTile(pendingBuilding.x, pendingBuilding.y) +
+      spawnConfig.pendingDepthBoost;
 
     const beamSprite = this.scene.add.image(
       screenX,
@@ -298,18 +444,19 @@ export class BuildingManager {
       ease: "Sine.easeInOut",
     });
 
-    this.pendingTurretEffects.set(pendingTurret.id, {
+    this.pendingBuildingEffects.set(pendingBuilding.id, {
       sprite: beamSprite,
       tween: alphaTween,
     });
   }
 
   /**
-   * Remove a pending turret beam by pending turret id.
-   * @param {string} pendingTurretId
+   * Remove a pending building skylight.
+   * @param {string} pendingBuildingId
+   * @param {object} options
    */
-  removePendingTurret(pendingTurretId, { immediate = false } = {}) {
-    const effect = this.pendingTurretEffects.get(pendingTurretId);
+  removePendingBuilding(pendingBuildingId, { immediate = false } = {}) {
+    const effect = this.pendingBuildingEffects.get(pendingBuildingId);
     if (!effect) {
       return;
     }
@@ -317,11 +464,10 @@ export class BuildingManager {
     if (immediate) {
       effect.tween?.stop();
       effect.sprite?.destroy();
-      this.pendingTurretEffects.delete(pendingTurretId);
+      this.pendingBuildingEffects.delete(pendingBuildingId);
       return;
     }
 
-    // Smoothly fade out the beam before destroying
     this.scene.tweens.add({
       targets: effect.sprite,
       alpha: 0,
@@ -331,14 +477,12 @@ export class BuildingManager {
       },
     });
 
-    // Stop the pulsing tween
-    effect.tween.stop();
-
-    this.pendingTurretEffects.delete(pendingTurretId);
+    effect.tween?.stop();
+    this.pendingBuildingEffects.delete(pendingBuildingId);
   }
 
   /**
-   * Clear all rendered buildings
+   * Clear all rendered buildings.
    */
   clearBuildings() {
     this.buildings.forEach((building) => {
@@ -347,21 +491,28 @@ export class BuildingManager {
       }
     });
     this.buildings = [];
-    this.clearPendingTurrets();
+    this.clearPendingBuildings();
   }
 
   /**
-   * Clear all pending turret effects.
+   * Clear all pending building effects.
    */
-  clearPendingTurrets() {
-    for (const pendingTurretId of this.pendingTurretEffects.keys()) {
-      this.removePendingTurret(pendingTurretId, { immediate: true });
+  clearPendingBuildings() {
+    for (const pendingBuildingId of this.pendingBuildingEffects.keys()) {
+      this.removePendingBuilding(pendingBuildingId, { immediate: true });
     }
   }
 
   /**
-   * Get all rendered building sprites
-   * @returns {array} - Array of building sprites
+   * Backward-compatible pending turret clear wrapper.
+   */
+  clearPendingTurrets() {
+    this.clearPendingBuildings();
+  }
+
+  /**
+   * Get all rendered building sprites.
+   * @returns {array}
    */
   getBuildings() {
     return this.buildings;
@@ -369,27 +520,23 @@ export class BuildingManager {
 
   /**
    * Update turret head sprites to show new orientations.
-   * @param {Array} rotations - Array of turret rotation data {id, orientation}
+   * @param {Array} rotations
    */
   updateTurretRotations(rotations) {
     if (!rotations || rotations.length === 0) return;
 
-    // Create a map of building IDs to rotation data for quick lookup
     const rotationMap = new Map();
     for (const rotation of rotations) {
       rotationMap.set(rotation.id, rotation);
     }
 
-    // Find and update turret head sprites
     for (const building of this.buildings) {
       if (!building.turretId) continue;
 
       const rotation = rotationMap.get(building.turretId);
       if (!rotation) continue;
 
-      // Only update head sprites (they have a baseSprite reference)
       if (building.baseSprite) {
-        // This is a head sprite, update its frame
         const newFrame =
           TURRET_FRAMES[rotation.orientation] || TURRET_FRAMES[0];
         building.setFrame(newFrame);
@@ -399,37 +546,31 @@ export class BuildingManager {
 
   /**
    * Play shot animations for turrets.
-   * @param {Array} shots - Array of shot data {turret_id, turret_x, turret_y, orientation, mob_id, damage}
-   */
-  /**
-   * Play shot animations for turrets.
-   * @param {Array} shots - Array of shot data {turret_id, turret_x, turret_y, orientation, mob_id, damage}
-   * @param {Array} mobs - Array of mob data {id, x, y, elevation, ...} to find target positions
+   * @param {Array} shots
+   * @param {Array} mobs
    */
   playShotAnimations(shots, mobs = []) {
     if (!shots || shots.length === 0) return;
 
-    // Create a map of mob IDs to their positions for quick lookup
     const mobMap = new Map();
     for (const mob of mobs) {
       mobMap.set(mob.id, mob);
     }
 
     for (const shot of shots) {
-      // Find turret base sprite by turret_id
       const turretBase = this.buildings.find(
-        (b) => b.turretId === shot.turret_id && !b.baseSprite,
+        (building) =>
+          building.turretId === shot.turret_id && !building.baseSprite,
       );
       if (!turretBase) continue;
 
-      // Get the shot frame for this orientation
       const shotFrame = TURRET_SHOT_FRAMES[shot.orientation];
-      if (shotFrame === undefined)
+      if (shotFrame === undefined) {
         throw new Error(
           `No shot frame defined for orientation ${shot.orientation}`,
         );
+      }
 
-      // Create a temporary shot effect sprite at the turret location
       const shotSprite = this.scene.add.sprite(
         turretBase.x,
         turretBase.y,
@@ -439,12 +580,10 @@ export class BuildingManager {
       shotSprite.setDepth(turretBase.depth + 1);
       shotSprite.setOrigin(0.5, 0.5);
 
-      // Hold the frame for 200ms then destroy
       this.scene.time.delayedCall(200, () => {
         shotSprite.destroy();
       });
 
-      // Play explosion animation at target mob location
       const targetMob = mobMap.get(shot.mob_id);
       if (targetMob) {
         const explosionIso = cartesianToIsometric(
@@ -452,18 +591,16 @@ export class BuildingManager {
           targetMob.y,
           targetMob.elevation || 0,
         );
-        const explosionDepth = getDepthForTile(targetMob.x, targetMob.y) + 10; // High depth to appear on top
+        const explosionDepth = getDepthForTile(targetMob.x, targetMob.y) + 10;
 
         const explosionSprite = this.scene.add.sprite(
           explosionIso.screenX,
           explosionIso.screenY,
           EXPLOSION_ASSET.key,
-          0, // Start at frame 0
+          0,
         );
         explosionSprite.setDepth(explosionDepth);
         explosionSprite.setOrigin(0.5, 1);
-
-        // Play the explosion animation, then destroy the sprite
         explosionSprite.play("explosion");
         explosionSprite.on("animationcomplete", () => {
           explosionSprite.destroy();

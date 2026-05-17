@@ -100,39 +100,39 @@ export class PhaserGameManager {
   }
 
   /**
-   * Render a turret on the map.
-   * @param {object} turret - Turret data {id, x, y, orientation}
+   * Render a placed building on the map.
+   * @param {object} building - Building data {id, x, y, building_type, ...}
    */
-  renderTurret(turret) {
+  renderPlacedBuilding(building) {
     if (!this.mapScene) {
-      setTimeout(() => this.renderTurret(turret), 100);
+      setTimeout(() => this.renderPlacedBuilding(building), 100);
       return;
     }
-    this.mapScene.renderTurret(turret);
+    this.mapScene.renderPlacedBuilding(building);
   }
 
   /**
-   * Render a pending turret skylight effect.
-   * @param {object} pendingTurret - Pending turret data {id, x, y, elevation}
+   * Render a pending building skylight effect.
+   * @param {object} pendingBuilding - Pending building data {id, x, y, building_type, elevation}
    */
-  renderPendingTurret(pendingTurret) {
+  renderPendingBuilding(pendingBuilding) {
     if (!this.mapScene) {
-      setTimeout(() => this.renderPendingTurret(pendingTurret), 100);
+      setTimeout(() => this.renderPendingBuilding(pendingBuilding), 100);
       return;
     }
-    this.mapScene.renderPendingTurret(pendingTurret);
+    this.mapScene.renderPendingBuilding(pendingBuilding);
   }
 
   /**
-   * Remove a pending turret skylight effect.
-   * @param {string} pendingTurretId - Pending turret id
+   * Remove a pending building skylight effect.
+   * @param {string} pendingBuildingId - Pending building id
    */
-  removePendingTurret(pendingTurretId) {
+  removePendingBuilding(pendingBuildingId) {
     if (!this.mapScene) {
-      setTimeout(() => this.removePendingTurret(pendingTurretId), 100);
+      setTimeout(() => this.removePendingBuilding(pendingBuildingId), 100);
       return;
     }
-    this.mapScene.removePendingTurret(pendingTurretId);
+    this.mapScene.removePendingBuilding(pendingBuildingId);
   }
 
   /**

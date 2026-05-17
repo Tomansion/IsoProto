@@ -13,6 +13,7 @@ import { loadTileset } from "../utils/tilesetHelper.js";
 import {
   BUILDING_SHEET_ASSET,
   TURRET_SHEET_ASSET,
+  WALL_ASSET,
   EXPLOSION_ASSET,
   EXPLOSION_ANIM_FRAMERATE,
   TURRET_SPAWN_EXPLOSION_ASSET,
@@ -62,6 +63,10 @@ export class MapScene extends Phaser.Scene {
         frameWidth: TURRET_SHEET_ASSET.frameWidth,
         frameHeight: TURRET_SHEET_ASSET.frameHeight,
       });
+    }
+
+    if (!this.textures.exists(WALL_ASSET.key)) {
+      this.load.image(WALL_ASSET.key, WALL_ASSET.url);
     }
 
     // Load explosion spritesheet
@@ -216,6 +221,12 @@ export class MapScene extends Phaser.Scene {
       return;
     }
 
+    if (!this.textures.exists(WALL_ASSET.key)) {
+      console.log("Waiting for wall image to load...");
+      setTimeout(() => this.renderMap(mapData), 100);
+      return;
+    }
+
     if (!this.textures.exists(TURRET_SPAWN_EXPLOSION_ASSET.key)) {
       console.log("Waiting for turret spawn explosion sheet to load...");
       setTimeout(() => this.renderMap(mapData), 100);
@@ -301,48 +312,59 @@ export class MapScene extends Phaser.Scene {
    * @param {object} turretData - Turret data {id, x, y, building_type, orientation, player_id}
    */
   renderTurret(turretData) {
+    this.renderPlacedBuilding(turretData);
+  }
+
+  /**
+   * Render a placed building on the map.
+   * @param {object} buildingData - Building data {id, x, y, building_type, ...}
+   */
+  renderPlacedBuilding(buildingData) {
     if (!this.buildingManager || !this.mapData) {
       console.warn(
-        "Cannot render turret: building manager or map data not ready",
+        "Cannot render building: building manager or map data not ready",
       );
       return;
     }
 
     if (
-      !this.mapData.buildings.some((building) => building.id === turretData.id)
+      !this.mapData.buildings.some(
+        (building) => building.id === buildingData.id,
+      )
     ) {
-      this.mapData.buildings.push(turretData);
+      this.mapData.buildings.push(buildingData);
     }
 
-    this.buildingManager.renderTurret(turretData, this.mapData, {
+    this.buildingManager.renderBuilding(buildingData, this.mapData, {
       playSpawnEffect: true,
     });
   }
 
   /**
-   * Render a pending turret skylight effect.
-   * @param {object} pendingTurretData - Pending turret data {id, x, y, elevation}
+   * Render a pending building skylight effect.
+   * @param {object} pendingBuildingData - Pending building data {id, x, y, building_type, elevation}
    */
-  renderPendingTurret(pendingTurretData) {
+  renderPendingBuilding(pendingBuildingData) {
     if (!this.buildingManager) {
       console.warn("BuildingManager not ready");
       return;
     }
 
-    this.buildingManager.renderPendingTurret(pendingTurretData);
+    this.buildingManager.renderPendingBuilding(pendingBuildingData);
   }
 
   /**
-   * Remove a pending turret skylight effect.
-   * @param {string} pendingTurretId - Pending turret id
+  /**
+   * Remove a pending building skylight effect.
+   * @param {string} pendingBuildingId - Pending building id
    */
-  removePendingTurret(pendingTurretId) {
+  removePendingBuilding(pendingBuildingId) {
     if (!this.buildingManager) {
       console.warn("BuildingManager not ready");
       return;
     }
 
-    this.buildingManager.removePendingTurret(pendingTurretId);
+    this.buildingManager.removePendingBuilding(pendingBuildingId);
   }
 
   /**

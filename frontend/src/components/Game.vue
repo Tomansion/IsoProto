@@ -18,13 +18,47 @@
             <div class="game-toolbar">
               <div class="game-name">{{ game?.name || "loading..." }}</div>
               <div class="game-controls">
-                <button @click="zoomIn" class="zoom-btn zoom-in" title="Zoom In">+</button>
-                <button @click="zoomOut" class="zoom-btn zoom-out" title="Zoom Out">−</button>
+                <button
+                  @click="zoomIn"
+                  class="zoom-btn zoom-in"
+                  title="Zoom In"
+                >
+                  +
+                </button>
+                <button
+                  @click="zoomOut"
+                  class="zoom-btn zoom-out"
+                  title="Zoom Out"
+                >
+                  −
+                </button>
                 <button @click="leaveGame" class="leave-btn">[Q] quit</button>
               </div>
             </div>
-
           </div>
+          <aside class="building-menu">
+            <div class="building-menu-title">buildings</div>
+            <div class="building-menu-list">
+              <button
+                v-for="building in buildingOptions"
+                :key="building.type"
+                class="building-card"
+                :class="{ selected: selectedBuildingType === building.type }"
+                @click="selectedBuildingType = building.type"
+              >
+                <div class="building-card-header">
+                  <span class="building-card-name">{{ building.label }}</span>
+                  <span class="building-card-size">{{
+                    building.footprint
+                  }}</span>
+                </div>
+                <div class="building-card-desc">{{ building.description }}</div>
+                <div class="building-card-time">
+                  spawn: {{ formatBuildTime(building.buildTimeMs) }}
+                </div>
+              </button>
+            </div>
+          </aside>
         </div>
       </div>
     </div>
@@ -34,6 +68,7 @@
 <script>
 import api from "../services/api";
 import phaserGameManager from "../services/PhaserGameManager.js";
+import { BUILDING_UI_CONFIG, BUILDING_TYPES } from "../config/mapConfig.js";
 
 export default {
   name: "Game",
@@ -48,6 +83,13 @@ export default {
       map: null,
       mobs: [],
       connectionTimeout: null,
+      selectedBuildingType: BUILDING_TYPES.TURRET,
+      buildingOptions: Object.entries(BUILDING_UI_CONFIG).map(
+        ([type, config]) => ({
+          type,
+          ...config,
+        }),
+      ),
     };
   },
   mounted() {
@@ -142,9 +184,10 @@ export default {
               phaserGameManager.updateMobs(this.mobs);
             }
 
-            const pendingTurrets = message.pending_turrets || [];
-            for (const pendingTurret of pendingTurrets) {
-              phaserGameManager.renderPendingTurret(pendingTurret);
+            const pendingBuildings =
+              message.pending_buildings || message.pending_turrets || [];
+            for (const pendingBuilding of pendingBuildings) {
+              phaserGameManager.renderPendingBuilding(pendingBuilding);
             }
 
             // Setup tile click detection AFTER map is ready
@@ -175,21 +218,23 @@ export default {
             this.game.players = message.data.players;
           }
           break;
+        case "building_placed":
         case "turret_placed":
           if (message.data) {
-            const turrets = Array.isArray(message.data)
+            const buildings = Array.isArray(message.data)
               ? message.data
               : [message.data];
 
-            for (const turret of turrets) {
-              phaserGameManager.removePendingTurret(turret.id);
-              phaserGameManager.renderTurret(turret);
+            for (const building of buildings) {
+              phaserGameManager.removePendingBuilding(building.id);
+              phaserGameManager.renderPlacedBuilding(building);
             }
           }
           break;
+        case "building_build_started":
         case "turret_build_started":
           if (message.data) {
-            phaserGameManager.renderPendingTurret(message.data);
+            phaserGameManager.renderPendingBuilding(message.data);
           }
           break;
         case "mob_update":
@@ -239,26 +284,28 @@ export default {
       }
     },
     handleTileClick(x, y) {
-      // Send turret placement request to backend
-      this.placeTurretAtTile(x, y);
+      this.placeBuildingAtTile(x, y);
     },
-    placeTurretAtTile(x, y) {
+    placeBuildingAtTile(x, y) {
       if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
         console.warn("WebSocket not ready");
         return;
       }
 
-      // Send turret placement action
       this.websocket.send(
         JSON.stringify({
           type: "player_action",
-          action_type: "place_turret",
+          action_type: "place_building",
           data: {
             x: Math.floor(x),
             y: Math.floor(y),
+            building_type: this.selectedBuildingType,
           },
         }),
       );
+    },
+    formatBuildTime(buildTimeMs) {
+      return `${(buildTimeMs / 1000).toFixed(1)}s`;
     },
     zoomIn() {
       const mapScene = phaserGameManager.getMapScene();
@@ -309,6 +356,7 @@ export default {
   flex: 1;
   overflow: hidden;
   min-height: 0;
+  min-width: 0;
 }
 
 .game-panel {
@@ -316,6 +364,7 @@ export default {
   flex: 1;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
 }
 
 .game-toolbar {
@@ -355,6 +404,85 @@ export default {
 .phaser-container {
   width: 100%;
   height: 100%;
+}
+
+.building-menu {
+  width: 260px;
+  min-width: 260px;
+  border-left: 1px solid #00aa00;
+  background-color: rgba(0, 18, 0, 1);
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 12px;
+}
+
+.building-menu-title {
+  color: #55ff55;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.building-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.building-card {
+  width: 100%;
+  text-align: left;
+  background-color: rgba(0, 26, 0, 0.9);
+  border: 1px solid #007700;
+  border-radius: 4px;
+  color: #00ff00;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  font-family: "Courier New", monospace;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    transform 0.2s;
+}
+
+.building-card:hover {
+  border-color: #33cc33;
+  background-color: rgba(0, 40, 0, 0.95);
+}
+
+.building-card.selected {
+  border-color: #55ff55;
+  background-color: rgba(0, 60, 0, 1);
+  transform: translateY(-1px);
+}
+
+.building-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.building-card-name {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.building-card-size,
+.building-card-time {
+  color: #88ff88;
+  font-size: 11px;
+}
+
+.building-card-desc {
+  color: #c4ffc4;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .status {
@@ -438,5 +566,23 @@ export default {
 
 .zoom-btn:active {
   transform: scale(0.95);
+}
+
+@media (max-width: 900px) {
+  .game-content {
+    flex-direction: column;
+  }
+
+  .building-menu {
+    width: 100%;
+    min-width: 0;
+    border-left: 0;
+    border-top: 1px solid #00aa00;
+  }
+
+  .building-menu-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 </style>

@@ -128,7 +128,7 @@ class SimplePathfinder:
         # came_from: for path reconstruction
         came_from: Dict[Tuple[int, int], Tuple[int, int]] = {}
 
-        MAX_ITERATIONS = 8000
+        MAX_ITERATIONS = 100000
         iterations = 0
 
         while open_set and iterations < MAX_ITERATIONS:

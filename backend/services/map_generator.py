@@ -102,5 +102,4 @@ class MapGenerator:
             for x in range(self.width):
                 elevation[y][x] = max(0, elevation[y][x] - min_elevation - 9)
 
-
         return tiles, elevation
