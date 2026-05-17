@@ -3,7 +3,7 @@
     <div class="terminal-window">
       <div class="terminal-header">isoproto@system:~$</div>
       <div class="terminal-content">
-        <h1>ISOPROTO v0.3</h1>
+        <h1>ISOPROTO v0.4</h1>
         <p class="terminal-text">> Enter username to login:</p>
         <input
           v-model="username"
