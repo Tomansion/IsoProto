@@ -5,7 +5,7 @@ Much simpler than Dijkstra flow fields: direct A* search with minimal costs.
 """
 
 import heapq
-from typing import List, Tuple, Dict, Set
+from typing import List, Tuple, Dict, Set, Optional
 from random import random
 
 
@@ -33,7 +33,11 @@ class SimplePathfinder:
         return True
 
     def get_cost(
-        self, x: int, y: int, map_obj, pathfinding_config: dict = None
+        self,
+        x: int,
+        y: int,
+        map_obj,
+        pathfinding_config: Optional[dict] = None,
     ) -> float:
         """Get cost to enter a tile based on mob-specific configuration.
 
@@ -84,6 +88,28 @@ class SimplePathfinder:
         """Chebyshev distance heuristic (admissible for 8-neighbor grids)."""
         return max(abs(x - goal_x), abs(y - goal_y))
 
+    def can_move_diagonally(
+        self,
+        x: int,
+        y: int,
+        dx: int,
+        dy: int,
+        map_obj,
+        blocked_tiles: Set[Tuple[int, int]],
+    ) -> bool:
+        """Check whether a diagonal move avoids corner-cutting.
+
+        Diagonal movement is only allowed when both orthogonal side tiles are
+        passable. This prevents moving through the corner gap between two
+        blocked tiles, such as diagonally placed walls.
+        """
+        if dx == 0 or dy == 0:
+            return True
+
+        horizontal_passable = self.is_passable(x + dx, y, map_obj, blocked_tiles)
+        vertical_passable = self.is_passable(x, y + dy, map_obj, blocked_tiles)
+        return horizontal_passable and vertical_passable
+
     def find_path(
         self,
         start_x: int,
@@ -92,7 +118,7 @@ class SimplePathfinder:
         goal_y: int,
         map_obj,
         blocked_tiles: Set[Tuple[int, int]],
-        pathfinding_config: dict = None,
+        pathfinding_config: Optional[dict] = None,
     ) -> List[Tuple[int, int]]:
         """Find path from start to goal using A*.
 
@@ -168,6 +194,17 @@ class SimplePathfinder:
                     if not self.is_passable(nx, ny, map_obj, blocked_tiles):
                         continue
 
+                    # Prevent diagonal corner-cutting through blocked tiles
+                    if not self.can_move_diagonally(
+                        x,
+                        y,
+                        dx,
+                        dy,
+                        map_obj,
+                        blocked_tiles,
+                    ):
+                        continue
+
                     # Calculate cost using mob-specific config
                     move_cost = self.get_cost(nx, ny, map_obj, pathfinding_config)
 
@@ -199,7 +236,7 @@ class SimplePathfinder:
         map_obj,
         blocked_tiles: Set[Tuple[int, int]],
         mob_type: str = "zombie",
-        pathfinding_config: dict = None,
+        pathfinding_config: Optional[dict] = None,
     ) -> List[Tuple[int, int]]:
         """Compute or retrieve cached path for a mob.
 
@@ -230,7 +267,13 @@ class SimplePathfinder:
 
         # Compute new path
         path = self.find_path(
-            start_x, start_y, goal_x, goal_y, map_obj, blocked_tiles, pathfinding_config
+            start_x,
+            start_y,
+            goal_x,
+            goal_y,
+            map_obj,
+            blocked_tiles,
+            pathfinding_config,
         )
         self.path_cache[mob_id] = path
         return path
@@ -245,7 +288,7 @@ class SimplePathfinder:
         map_obj,
         blocked_tiles: Set[Tuple[int, int]],
         mob_type: str = "zombie",
-        pathfinding_config: dict = None,
+        pathfinding_config: Optional[dict] = None,
     ) -> Tuple[float, float]:
         """Get the next waypoint for a mob.
 

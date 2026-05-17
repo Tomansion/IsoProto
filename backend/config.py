@@ -29,8 +29,8 @@ TILE_TREE = 1
 MOB_SPAWN_CONFIG = {
     "initial_wave_size": 10,  # Number of mobs in the first wave
     "wave_increment": 5,  # Additional mobs per subsequent wave
-    "wave_delay_ticks": 100,  # Game ticks between spawning waves (0.1s per tick)
-    "spawn_rate_ticks": 5,  # Game ticks between spawning individual mobs in a sequence
+    "wave_delay_ticks": 60,  # Game ticks between spawning waves (0.1s per tick)
+    "spawn_rate_ticks": 3,  # Game ticks between spawning individual mobs in a sequence
     "max_mobs": 200,  # Maximum concurrent mobs on the map
     "border_distance": 0,  # Distance from map edge where mobs spawn
     "spawn_spread": 5,  # Random offset along the edge for each mob (±N)
@@ -51,7 +51,7 @@ MOB_TYPE_CONFIG = {
             "base_cost": 1.0,  # Base cost to move to a tile
             "tree_cost": 0.5,  # Additional cost for trees (added to base)
             "water_cost": 4.0,  # Additional cost for water
-            "randomness": 1.4,  # Random variation (0.0 = no randomness, 2.0 = ±100%)
+            "randomness": 1.2,  # Random variation (0.0 = no randomness, 2.0 = ±100%)
         },
     },
 }
