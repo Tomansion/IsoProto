@@ -256,6 +256,34 @@ export default {
             phaserGameManager.updateMapTiles(message.data);
           }
           break;
+        case "building_damaged":
+          if (Array.isArray(message.data) && this.map?.buildings) {
+            for (const damagedBuilding of message.data) {
+              const localBuilding = this.map.buildings.find(
+                (building) => building.id === damagedBuilding.id,
+              );
+              if (!localBuilding) {
+                continue;
+              }
+
+              localBuilding.hp = damagedBuilding.hp;
+              localBuilding.max_hp = damagedBuilding.max_hp;
+            }
+
+            phaserGameManager.playBuildingDamageEffects(message.data);
+          }
+          break;
+        case "building_destroyed":
+          if (Array.isArray(message.data) && this.map?.buildings) {
+            for (const destroyedBuilding of message.data) {
+              this.map.buildings = this.map.buildings.filter(
+                (building) => building.id !== destroyedBuilding.id,
+              );
+            }
+
+            phaserGameManager.destroyBuildings(message.data);
+          }
+          break;
         case "mob_update":
           // Complete mob list update - replace the entire list
           this.mobs = message.data || [];

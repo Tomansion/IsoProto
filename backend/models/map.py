@@ -1,7 +1,14 @@
 """Map model for game maps."""
 
 import uuid
-from config import BASE_RADIUS, MAP_CENTER, MAP_SIZE, TILE_EMPTY, TILE_TREE
+from config import (
+    BASE_RADIUS,
+    BUILDING_TYPE_CONFIG,
+    MAP_CENTER,
+    MAP_SIZE,
+    TILE_EMPTY,
+    TILE_TREE,
+)
 from services.map_generator import MapGenerator
 from typing import List, Optional
 
@@ -19,6 +26,8 @@ class Building:
         building_type: str = "base",
         player_id: Optional[str] = None,
         orientation: int = 0,
+        hp: Optional[int] = None,
+        max_hp: Optional[int] = None,
     ):
         self.id = id or str(uuid.uuid4())
         self.x = x
@@ -27,6 +36,9 @@ class Building:
         self.building_type = building_type  # "base", "turret", etc
         self.player_id = player_id  # ID of player who placed it
         self.orientation = orientation  # 0-7 for direction (mainly for turrets)
+        default_hp = BUILDING_TYPE_CONFIG.get(building_type, {}).get("hp", 1)
+        self.max_hp = max_hp if max_hp is not None else default_hp
+        self.hp = hp if hp is not None else self.max_hp
 
     def to_dict(self) -> dict:
         """Convert building to dictionary for serialization."""
@@ -38,6 +50,8 @@ class Building:
             "building_type": self.building_type,
             "player_id": self.player_id,
             "orientation": self.orientation,
+            "hp": self.hp,
+            "max_hp": self.max_hp,
         }
 
     @classmethod
@@ -51,6 +65,8 @@ class Building:
             building_type=data.get("building_type", "base"),
             player_id=data.get("player_id"),
             orientation=data.get("orientation", 0),
+            hp=data.get("hp"),
+            max_hp=data.get("max_hp"),
         )
 
 

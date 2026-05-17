@@ -3,7 +3,11 @@
  * Handles spawning, updating, and removing enemy sprites on the isometric map
  */
 
-import { ZOMBIE_ASSET, ZOMBIE_ANIM_FRAMERATE } from "../../config/mapConfig.js";
+import {
+  ZOMBIE_ASSET,
+  ZOMBIE_ANIM_FRAMERATE,
+  ZOMBIE_ATTACK_ANIM_FRAMERATE,
+} from "../../config/mapConfig.js";
 import {
   cartesianToIsometric,
   getDepthForTile,
@@ -54,6 +58,18 @@ export class MobManager {
         repeat: -1,
       });
     }
+
+    if (!this.scene.anims.exists("zombie-attack")) {
+      this.scene.anims.create({
+        key: "zombie-attack",
+        frames: this.scene.anims.generateFrameNumbers(ZOMBIE_ASSET.key, {
+          start: 12,
+          end: 17,
+        }),
+        frameRate: ZOMBIE_ATTACK_ANIM_FRAMERATE,
+        repeat: -1,
+      });
+    }
   }
 
   /**
@@ -92,7 +108,11 @@ export class MobManager {
       const flipX = mob.orientation >= 1 && mob.orientation <= 3;
 
       // Choose animation based on water status
-      const animationKey = mob.is_in_water ? "zombie-swim" : "zombie-walk";
+      const animationKey = mob.is_attacking
+        ? "zombie-attack"
+        : mob.is_in_water
+          ? "zombie-swim"
+          : "zombie-walk";
 
       if (this.mobSprites[mob.id]) {
         // Move existing sprite

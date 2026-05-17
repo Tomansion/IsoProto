@@ -1,9 +1,9 @@
 """Mob models for game entities (enemies)."""
 
-import uuid
 import math
-from typing import Dict, Tuple
-from config import TILE_TREE
+import uuid
+from typing import Dict, Optional, Tuple
+from config import BUILDING_TYPE_CONFIG, TILE_TREE
 from services.pathfinding_manager import PathfindingManager
 
 
@@ -25,6 +25,9 @@ class Mob:
         map_obj=None,
         terrain_multipliers: Dict[str, float] = None,
         pathfinding_config: Dict = None,
+        attack_damage: int = 1,
+        attack_range: float = 1.25,
+        attack_cooldown_ticks: int = 10,
     ):
         self.id = id or str(uuid.uuid4())
         self.x = float(x)
@@ -49,6 +52,12 @@ class Mob:
             "water_cost": 10.0,
             "randomness": 0.0,
         }
+        self.attack_damage = attack_damage
+        self.attack_range = attack_range
+        self.attack_cooldown_ticks = attack_cooldown_ticks
+        self.attack_target_id: Optional[str] = None
+        self.is_attacking = False
+        self.last_attack_tick = -attack_cooldown_ticks
 
     def get_current_waypoint(self) -> Tuple[float, float]:
         """Get the current waypoint from the mob's pathfinding manager.
@@ -105,6 +114,38 @@ class Mob:
             return "water"
 
         return "ground"
+
+    def get_distance_to_building(self, building) -> float:
+        """Return the shortest distance from the mob to a building footprint."""
+        footprint_radius = BUILDING_TYPE_CONFIG.get(
+            building.building_type, {}
+        ).get("footprint_radius", 0)
+
+        min_x = building.x - footprint_radius
+        max_x = building.x + footprint_radius
+        min_y = building.y - footprint_radius
+        max_y = building.y + footprint_radius
+
+        closest_x = min(max(self.x, min_x), max_x)
+        closest_y = min(max(self.y, min_y), max_y)
+        dx = closest_x - self.x
+        dy = closest_y - self.y
+        return math.sqrt(dx * dx + dy * dy)
+
+    def get_attack_point(self, building) -> Tuple[float, float]:
+        """Return the closest point on a building footprint to face while attacking."""
+        footprint_radius = BUILDING_TYPE_CONFIG.get(
+            building.building_type, {}
+        ).get("footprint_radius", 0)
+
+        min_x = building.x - footprint_radius
+        max_x = building.x + footprint_radius
+        min_y = building.y - footprint_radius
+        max_y = building.y + footprint_radius
+
+        closest_x = min(max(self.x, min_x), max_x)
+        closest_y = min(max(self.y, min_y), max_y)
+        return (closest_x, closest_y)
 
     def _calculate_orientation(self, dx: float, dy: float) -> int:
         """Calculate orientation (0-7) from movement direction in isometric space.
@@ -237,6 +278,8 @@ class Mob:
             "elevation": round(self.elevation, 2),
             "orientation": self.orientation,
             "is_in_water": is_in_water,
+            "is_attacking": self.is_attacking,
+            "attack_target_id": self.attack_target_id,
         }
 
     @classmethod
@@ -275,6 +318,7 @@ class Zombie(Mob):
         zombie_config = MOB_TYPE_CONFIG.get("zombie", {})
         hp = zombie_config.get("hp", 100)
         speed = zombie_config.get("speed", 0.3)
+        attack_config = zombie_config.get("attack", {})
         terrain_multipliers = zombie_config.get("terrain_multipliers")
         pathfinding_config = zombie_config.get("pathfinding")
 
@@ -292,4 +336,7 @@ class Zombie(Mob):
             map_obj=map_obj,
             terrain_multipliers=terrain_multipliers,
             pathfinding_config=pathfinding_config,
+            attack_damage=attack_config.get("damage", 1),
+            attack_range=attack_config.get("range", 1.25),
+            attack_cooldown_ticks=attack_config.get("cooldown_ticks", 10),
         )

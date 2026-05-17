@@ -114,6 +114,22 @@ export class PhaserGameManager {
     this.mapScene.updateTurretRotations(rotations);
   }
 
+  playBuildingDamageEffects(damagedBuildings) {
+    if (!this.mapScene) {
+      setTimeout(() => this.playBuildingDamageEffects(damagedBuildings), 100);
+      return;
+    }
+    this.mapScene.playBuildingDamageEffects(damagedBuildings);
+  }
+
+  destroyBuildings(destroyedBuildings) {
+    if (!this.mapScene) {
+      setTimeout(() => this.destroyBuildings(destroyedBuildings), 100);
+      return;
+    }
+    this.mapScene.destroyBuildings(destroyedBuildings);
+  }
+
   /**
    * Render a placed building on the map.
    * @param {object} building - Building data {id, x, y, building_type, ...}

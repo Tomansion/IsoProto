@@ -42,6 +42,11 @@ MOB_TYPE_CONFIG = {
     "zombie": {
         "speed": 0.1,
         "hp": 10,
+        "attack": {
+            "damage": 1,
+            "range": 1.25,
+            "cooldown_ticks": 10,
+        },
         "terrain_multipliers": {
             "tree": 0.5,  # slower in forests
             "water": 0.2,  # slower in water
@@ -49,8 +54,9 @@ MOB_TYPE_CONFIG = {
         },
         "pathfinding": {
             "base_cost": 1.0,  # Base cost to move to a tile
-            "tree_cost": 0.5,  # Additional cost for trees (added to base)
+            "tree_cost": 0.2,  # Additional cost for trees (added to base)
             "water_cost": 4.0,  # Additional cost for water
+            "building_cost": 20.0,  # Buildings are passable but expensive
             "randomness": 1.2,  # Random variation (0.0 = no randomness, 2.0 = ±100%)
         },
     },
@@ -66,6 +72,7 @@ BUILDING_TYPE_CONFIG = {
         "build_cooldown_ticks": int(1 / GAME_TICK_SECONDS),
         "building_id": 0,
         "blocks_path": True,
+        "hp": 50,
         "targetable_environments": {
             "tree": False,
             "water": True,
@@ -78,6 +85,7 @@ BUILDING_TYPE_CONFIG = {
         "build_cooldown_ticks": int(0.4 / GAME_TICK_SECONDS),
         "building_id": 0,
         "blocks_path": True,
+        "hp": 100,
     },
     "base": {
         "footprint_radius": 0,
@@ -85,6 +93,7 @@ BUILDING_TYPE_CONFIG = {
         "build_cooldown_ticks": 0,
         "building_id": 0,
         "blocks_path": False,
+        "hp": 1000,
     },
 }
 

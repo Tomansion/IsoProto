@@ -14,6 +14,7 @@
 ✔ Fix mobs going through walls when they are placed diagonally @done(26-05-17 13:38)
 ✔ Make that contstructions destroy trees @done(26-05-17 13:57)
 ✔ Make the mob not visible when behind a tree @done(26-05-17 14:13)
+✔ Building targetable if blocking @done(26-05-17 14:50)
 
 ☐ Add currency
 ☐ Fix building elevation by placing structure blocks bellow them

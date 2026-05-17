@@ -27,6 +27,12 @@ export class BuildingManager {
     this.pendingBuildingEffects = new Map();
   }
 
+  getBuildingSprites(buildingId) {
+    return this.buildings.filter(
+      (building) => building?.buildingId === buildingId,
+    );
+  }
+
   /**
    * Load building assets.
    */
@@ -198,6 +204,7 @@ export class BuildingManager {
     baseSprite.setDepth(baseDepth);
     baseSprite.setOrigin(0.5, 0.5);
     baseSprite.turretId = id;
+    baseSprite.buildingId = id;
     baseSprite.buildingType = BUILDING_TYPES.TURRET;
 
     const headFrame = TURRET_FRAMES[orientation] || TURRET_FRAMES[0];
@@ -210,6 +217,7 @@ export class BuildingManager {
     headSprite.setDepth(headDepth);
     headSprite.setOrigin(0.5, 0.5);
     headSprite.turretId = id;
+    headSprite.buildingId = id;
     headSprite.baseSprite = baseSprite;
     headSprite.buildingType = BUILDING_TYPES.TURRET;
     baseSprite.headSprite = headSprite;
@@ -543,6 +551,72 @@ export class BuildingManager {
         building.setFrame(newFrame);
       }
     }
+  }
+
+  playBuildingDamageEffect(buildingId) {
+    const buildingSprites = this.getBuildingSprites(buildingId);
+    if (buildingSprites.length === 0) {
+      return;
+    }
+
+    for (const sprite of buildingSprites) {
+      if (sprite.damageTween) {
+        sprite.damageTween.stop();
+      }
+
+      const originalX = sprite.x;
+      const originalY = sprite.y;
+      sprite.setTint(0xbb4444);
+      sprite.damageTween = this.scene.tweens.add({
+        targets: sprite,
+        x: {
+          from: originalX - 1,
+          to: originalX,
+        },
+        y: {
+          from: originalY - 1,
+          to: originalY,
+        },
+        duration: 1,
+        onComplete: () => {
+          sprite.clearTint();
+          sprite.setPosition(originalX, originalY);
+          sprite.damageTween = null;
+        },
+      });
+    }
+  }
+
+  destroyBuilding(buildingId) {
+    const buildingSprites = this.getBuildingSprites(buildingId);
+    if (buildingSprites.length === 0) {
+      return;
+    }
+
+    const anchorSprite = buildingSprites[0];
+    const explosionSprite = this.scene.add.sprite(
+      anchorSprite.x,
+      anchorSprite.y,
+      EXPLOSION_ASSET.key,
+      0,
+    );
+    explosionSprite.setDepth(anchorSprite.depth + 2);
+    explosionSprite.setOrigin(0.5, 0.8);
+    explosionSprite.setScale(3);
+    explosionSprite.play("explosion");
+    explosionSprite.on("animationcomplete", () => {
+      explosionSprite.destroy();
+    });
+
+    this.buildings = this.buildings.filter((building) => {
+      if (building?.buildingId !== buildingId) {
+        return true;
+      }
+
+      building.damageTween?.stop();
+      building.destroy();
+      return false;
+    });
   }
 
   /**

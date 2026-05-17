@@ -303,6 +303,29 @@ export class MapScene extends Phaser.Scene {
     this.buildingManager.updateTurretRotations(rotations);
   }
 
+  playBuildingDamageEffects(damagedBuildings) {
+    if (!this.buildingManager || !Array.isArray(damagedBuildings)) {
+      return;
+    }
+
+    for (const damagedBuilding of damagedBuildings) {
+      this.buildingManager.playBuildingDamageEffect(damagedBuilding.id);
+    }
+  }
+
+  destroyBuildings(destroyedBuildings) {
+    if (!this.buildingManager || !Array.isArray(destroyedBuildings)) {
+      return;
+    }
+
+    for (const destroyedBuilding of destroyedBuildings) {
+      this.mapData.buildings = this.mapData.buildings.filter(
+        (building) => building.id !== destroyedBuilding.id,
+      );
+      this.buildingManager.destroyBuilding(destroyedBuilding.id);
+    }
+  }
+
   /**
    * Play shot animations for turrets.
    * @param {Array} shots - Array of shot data {turret_id, turret_x, turret_y, orientation, mob_id, damage}

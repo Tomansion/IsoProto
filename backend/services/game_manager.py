@@ -96,6 +96,123 @@ class GameManager:
         self.game_ws_connections[game_id].append(ws)
 
     # Mob management
+    def _get_mob_remaining_path_tiles(
+        self, game: Game, mob
+    ) -> set[tuple[int, int]]:
+        """Return the remaining cached path tiles for a mob."""
+        cached_path = game.pathfinding.pathfinder.path_cache.get(mob.id, [])
+        path_index = game.pathfinding.pathfinder.path_index.get(mob.id, 0)
+        if not cached_path or path_index >= len(cached_path):
+            return set()
+
+        return set(cached_path[path_index:])
+
+    def _is_building_on_mob_path(self, game: Game, mob, building: Building) -> bool:
+        """Return whether any tile of the building is on the mob's path."""
+        remaining_path_tiles = self._get_mob_remaining_path_tiles(game, mob)
+        if not remaining_path_tiles:
+            return False
+
+        building_tiles = self._get_existing_building_tiles(game, building)
+        return bool(remaining_path_tiles & building_tiles)
+
+    def _get_attackable_building(self, game: Game, mob) -> Optional[Building]:
+        """Return the closest building currently within the mob's attack range."""
+        current_target_id = mob.attack_target_id
+        current_target = None
+        if current_target_id is not None:
+            current_target = next(
+                (
+                    building
+                    for building in game.map.buildings
+                    if building.id == current_target_id
+                ),
+                None,
+            )
+            if current_target is not None:
+                current_distance = mob.get_distance_to_building(current_target)
+                if (
+                    current_distance <= mob.attack_range
+                    and self._is_building_on_mob_path(game, mob, current_target)
+                    and BUILDING_TYPE_CONFIG.get(
+                        current_target.building_type, {}
+                    ).get("can_be_attacked", True)
+                ):
+                    return current_target
+
+        closest_building = None
+        closest_distance = float("inf")
+        for building in game.map.buildings:
+            if not BUILDING_TYPE_CONFIG.get(building.building_type, {}).get(
+                "can_be_attacked", True
+            ):
+                continue
+            if not self._is_building_on_mob_path(game, mob, building):
+                continue
+
+            distance = mob.get_distance_to_building(building)
+            if distance > mob.attack_range or distance >= closest_distance:
+                continue
+
+            closest_distance = distance
+            closest_building = building
+
+        return closest_building
+
+    def _destroy_building(self, game: Game, building: Building) -> dict:
+        """Remove a destroyed building from the game and refresh pathfinding."""
+        game.map.buildings = [
+            existing_building
+            for existing_building in game.map.buildings
+            if existing_building.id != building.id
+        ]
+        game.pathfinding.update_blocked_tiles(game.map.buildings)
+        game.pathfinding.clear_cache()
+        return building.to_dict()
+
+    def _tick_mob_attack(
+        self, game: Game, mob
+    ) -> tuple[bool, Optional[dict], Optional[dict]]:
+        """Handle mob melee attacks against nearby buildings."""
+        target_building = self._get_attackable_building(game, mob)
+        if target_building is None:
+            mob.is_attacking = False
+            mob.attack_target_id = None
+            return (False, None, None)
+
+        attack_x, attack_y = mob.get_attack_point(target_building)
+        mob.orientation = mob._calculate_orientation(
+            attack_x - mob.x,
+            attack_y - mob.y,
+        )
+        mob.is_attacking = True
+        mob.attack_target_id = target_building.id
+
+        if game.current_tick - mob.last_attack_tick < mob.attack_cooldown_ticks:
+            return (True, None, None)
+
+        mob.last_attack_tick = game.current_tick
+        target_building.hp -= mob.attack_damage
+
+        damage_event = {
+            "id": target_building.id,
+            "hp": max(0, target_building.hp),
+            "max_hp": target_building.max_hp,
+            "building_type": target_building.building_type,
+        }
+
+        if target_building.hp > 0:
+            return (True, damage_event, None)
+
+        target_building.hp = 0
+        destroyed_building = self._destroy_building(game, target_building)
+        for other_mob in game.mobs:
+            if other_mob.attack_target_id == target_building.id:
+                other_mob.attack_target_id = None
+                other_mob.is_attacking = False
+
+        return (True, damage_event, destroyed_building)
+
     def tick_mobs(self, game_id: str) -> tuple:
         """Move all mobs one tick toward their target.
 
@@ -104,18 +221,35 @@ class GameManager:
         Updates each mob's elevation from the current map tile.
 
         Returns:
-            Tuple of (mob_list, dead_mob_ids)
+            Tuple of (mob_list, dead_mob_ids, damaged_buildings, destroyed_buildings)
             - mob_list: list of mob dicts for WS broadcasting
             - dead_mob_ids: list of IDs of mobs that died this tick (for frontend feedback)
         """
         game = self.games.get(game_id)
         if not game:
-            return ([], [])
+            return ([], [], [], [])
 
         alive_mobs = []
         dead_mob_ids = []
+        damaged_buildings = []
+        destroyed_buildings = []
 
         for mob in game.mobs:
+            is_attacking, damage_event, destroyed_building = self._tick_mob_attack(
+                game, mob
+            )
+            if damage_event is not None:
+                damaged_buildings.append(damage_event)
+            if destroyed_building is not None:
+                destroyed_buildings.append(destroyed_building)
+
+            if is_attacking:
+                tx = max(0, min(game.map.width - 1, round(mob.x)))
+                ty = max(0, min(game.map.height - 1, round(mob.y)))
+                mob.elevation = game.map.elevation[ty][tx]
+                alive_mobs.append(mob)
+                continue
+
             reached = mob.move_toward_target()
             if reached:
                 # Mob removed (reached target or died)
@@ -129,7 +263,12 @@ class GameManager:
                 alive_mobs.append(mob)
 
         game.mobs = alive_mobs
-        return ([m.to_dict() for m in game.mobs], dead_mob_ids)
+        return (
+            [m.to_dict() for m in game.mobs],
+            dead_mob_ids,
+            damaged_buildings,
+            destroyed_buildings,
+        )
 
     # Turret management
     def _get_building_tiles(
@@ -306,6 +445,7 @@ class GameManager:
         game.map.buildings.append(building)
 
         game.pathfinding.update_blocked_tiles(game.map.buildings)
+        game.pathfinding.clear_cache()
 
         for mob in game.mobs:
             cached_path = game.pathfinding.pathfinder.path_cache.get(mob.id, [])

@@ -26,10 +26,6 @@ class SimplePathfinder:
         if x < 0 or x >= map_obj.width or y < 0 or y >= map_obj.height:
             return False
 
-        # Turrets block movement
-        if (x, y) in blocked_tiles:
-            return False
-
         return True
 
     def get_cost(
@@ -37,6 +33,7 @@ class SimplePathfinder:
         x: int,
         y: int,
         map_obj,
+        blocked_tiles: Set[Tuple[int, int]],
         pathfinding_config: Optional[dict] = None,
     ) -> float:
         """Get cost to enter a tile based on mob-specific configuration.
@@ -64,6 +61,7 @@ class SimplePathfinder:
         base_cost = pathfinding_config.get("base_cost", 1.0)
         tree_cost = pathfinding_config.get("tree_cost", 0.5)
         water_cost = pathfinding_config.get("water_cost", 10.0)
+        building_cost = pathfinding_config.get("building_cost", 20.0)
         randomness = pathfinding_config.get("randomness", 0.0)
 
         cost = base_cost
@@ -81,6 +79,10 @@ class SimplePathfinder:
         # Water (elevation <= 0) is hard to cross
         if map_obj.elevation[y][x] <= 0:
             cost += water_cost
+
+        # Buildings are passable, but expensive to path through
+        if (x, y) in blocked_tiles:
+            cost += building_cost
 
         return cost
 
@@ -105,6 +107,9 @@ class SimplePathfinder:
         """
         if dx == 0 or dy == 0:
             return True
+
+        if (x + dx, y) in blocked_tiles and (x, y + dy) in blocked_tiles:
+            return False
 
         horizontal_passable = self.is_passable(x + dx, y, map_obj, blocked_tiles)
         vertical_passable = self.is_passable(x, y + dy, map_obj, blocked_tiles)
@@ -206,7 +211,13 @@ class SimplePathfinder:
                         continue
 
                     # Calculate cost using mob-specific config
-                    move_cost = self.get_cost(nx, ny, map_obj, pathfinding_config)
+                    move_cost = self.get_cost(
+                        nx,
+                        ny,
+                        map_obj,
+                        blocked_tiles,
+                        pathfinding_config,
+                    )
 
                     # Diagonal moves cost slightly more
                     if dx != 0 and dy != 0:

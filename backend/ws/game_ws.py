@@ -89,7 +89,12 @@ class GameConnectionManager:
                     )
 
                 # Update mobs
-                mob_dicts, dead_mob_ids = game_manager.tick_mobs(game_id)
+                (
+                    mob_dicts,
+                    dead_mob_ids,
+                    damaged_buildings,
+                    destroyed_buildings,
+                ) = game_manager.tick_mobs(game_id)
                 await self.broadcast_game(
                     game_id,
                     {"type": "mob_update", "data": mob_dicts},
@@ -98,6 +103,16 @@ class GameConnectionManager:
                     await self.broadcast_game(
                         game_id,
                         {"type": "mob_died", "data": dead_mob_ids},
+                    )
+                if damaged_buildings:
+                    await self.broadcast_game(
+                        game_id,
+                        {"type": "building_damaged", "data": damaged_buildings},
+                    )
+                if destroyed_buildings:
+                    await self.broadcast_game(
+                        game_id,
+                        {"type": "building_destroyed", "data": destroyed_buildings},
                     )
 
                 # Update turrets and broadcast rotation changes and shots
